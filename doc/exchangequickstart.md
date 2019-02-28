@@ -22,7 +22,7 @@ sh get-docker.sh
 
 Pull in the offer repo from the official source on github and then change into the directory that's created for it.
 ```
-git clone https://github.com/offerit/offer
+git clone https://github.com/nharan/offer
 cd offer
 ```
 

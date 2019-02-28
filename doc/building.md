@@ -32,7 +32,7 @@ huge gain if you do not need this functionality.
 
 We ship a Dockerfile.  This builds both common node type binaries.
 
-    git clone https://github.com/offerit/offer
+    git clone https://github.com/nharan/offer
     cd offer
     docker build -t offerit/offer .
 
@@ -80,7 +80,7 @@ will build out of the box without further effort:
         libreadline-dev \
         perl
 
-    git clone https://github.com/offerit/offer
+    git clone https://github.com/nharan/offer
     cd offer
     git submodule update --init --recursive
     mkdir build
@@ -145,7 +145,7 @@ Here is how to build and install Boost 1.60 into your user's home directory
 
 Then the instructions are the same as for offer:
 
-    git clone https://github.com/offerit/offer
+    git clone https://github.com/nharan/offer
     cd offer
     git checkout stable
     git submodule update --init --recursive
@@ -202,7 +202,7 @@ offer. Until then, this will allow you to install boost 1.60.0.
 
 ### Clone the Repository
 
-    git clone https://github.com/offerit/offer.git
+    git clone https://github.com/nharan/offer.git
     cd offer
 
 ### Compile

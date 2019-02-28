@@ -2,7 +2,7 @@
 # Introduction
 
 In this document we derive the approximate integer square root function used by Offer for the curation curve
-[here](https://github.com/offerit/offer/issues/1052).
+[here](https://github.com/nharan/offer/issues/1052).
 
 # MSB function
 

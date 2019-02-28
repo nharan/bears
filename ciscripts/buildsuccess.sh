@@ -1,5 +1,5 @@
 #/bin/bash
-curl --silent -XPOST -H "Authorization: token $GITHUB_SECRET" https://api.github.com/repos/offerit/offer/statuses/$(git rev-parse HEAD) -d "{
+curl --silent -XPOST -H "Authorization: token $GITHUB_SECRET" https://api.github.com/repos/nharan/offer/statuses/$(git rev-parse HEAD) -d "{
   \"state\": \"success\",
   \"target_url\": \"${BUILD_URL}\",
   \"description\": \"Jenkins-CI reports build succeeded!!\",

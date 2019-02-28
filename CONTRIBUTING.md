@@ -24,7 +24,7 @@ Please do a keyword search to see if there is already an existing issue before o
 
 ## Offerit.org vs. Offer Blockchain
 
-This issue tracker is only intended to track issues for the Offer blockchain. If the issue is with the Offerit.org website, please open an issue in the [Offerit.org Repository](https://github.com/offerit/offerit.org/).
+This issue tracker is only intended to track issues for the Offer blockchain. If the issue is with the Offerit.org website, please open an issue in the [Offerit.org Repository](https://github.com/nharan/offerit.org/).
 
 ## Pull Requests
 

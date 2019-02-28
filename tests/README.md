@@ -27,7 +27,7 @@ Then, inside the container:
 (These steps are taken from `/Dockerfile.test` in the
 repository root.)
 
-    git clone https://github.com/offerit/offer.git \
+    git clone https://github.com/nharan/offer.git \
         /usr/local/src/offer
     cd /usr/local/src/offer
     git checkout <branch> # e.g. 123-feature

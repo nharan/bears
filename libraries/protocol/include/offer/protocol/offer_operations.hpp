@@ -115,7 +115,7 @@ namespace offer { namespace protocol {
 
    /** Allows to store all SMT tokens being allowed to use during voting process.
     *  Maps asset symbol (SMT) to the vote info.
-    *  @see SMT spec for details: https://github.com/offerit/smt-whitepaper/blob/master/smt-manual/manual.md
+    *  @see SMT spec for details: https://github.com/nharan/smt-whitepaper/blob/master/smt-manual/manual.md
     */
    struct allowed_vote_assets
    {
