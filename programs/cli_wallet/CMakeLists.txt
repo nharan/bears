@@ -9,14 +9,14 @@ if( GPERFTOOLS_FOUND )
     list( APPEND PLATFORM_SPECIFIC_LIBS tcmalloc )
 endif()
 
-if( BEARS_STATIC_BUILD )
+if( OFFER_STATIC_BUILD )
    target_link_libraries( cli_wallet PRIVATE
                           "-static-libstdc++ -static-libgcc -lreadline"
-                          graphene_net bears_chain bears_protocol bears_utilities bears_wallet condenser_api_plugin fc ${CMAKE_DL_LIBS} ${PLATFORM_SPECIFIC_LIBS} )
-else( BEARS_STATIC_BUILD )
+                          graphene_net offer_chain offer_protocol offer_utilities offer_wallet condenser_api_plugin fc ${CMAKE_DL_LIBS} ${PLATFORM_SPECIFIC_LIBS} )
+else( OFFER_STATIC_BUILD )
    target_link_libraries( cli_wallet PRIVATE
-                          graphene_net bears_chain bears_protocol bears_utilities bears_wallet condenser_api_plugin fc ${CMAKE_DL_LIBS} ${PLATFORM_SPECIFIC_LIBS} )
-endif( BEARS_STATIC_BUILD )
+                          graphene_net offer_chain offer_protocol offer_utilities offer_wallet condenser_api_plugin fc ${CMAKE_DL_LIBS} ${PLATFORM_SPECIFIC_LIBS} )
+endif( OFFER_STATIC_BUILD )
 
 if( CLANG_TIDY_EXE )
    set_target_properties(

@@ -1,6 +1,6 @@
 {
     "current_shuffled_witnesses": [
-        "bearshare",
+        "offerhare",
         "",
         "",
         "",

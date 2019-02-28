@@ -1,18 +1,18 @@
 #ifdef IS_TEST_NET
-#include <bears/chain/generic_custom_operation_interpreter.hpp>
-#include <bears/chain/account_object.hpp>
+#include <offer/chain/generic_custom_operation_interpreter.hpp>
+#include <offer/chain/account_object.hpp>
 
 #include <boost/test/unit_test.hpp>
 
 #include "../db_fixture/database_fixture.hpp"
 
-using namespace bears::chain;
-using namespace bears::chain::test;
+using namespace offer::chain;
+using namespace offer::chain::test;
 /*
-namespace bears { namespace plugin_tests {
+namespace offer { namespace plugin_tests {
 
-using namespace bears::app;
-using namespace bears::chain;
+using namespace offer::app;
+using namespace offer::chain;
 
 struct test_a_operation : base_operation
 {
@@ -42,8 +42,8 @@ class test_plugin : public plugin
       std::shared_ptr< generic_custom_operation_interpreter< test_op > > _evaluator_registry;
 };
 
-BEARS_DEFINE_PLUGIN_EVALUATOR( test_plugin, test_a_operation, test_a );
-BEARS_DEFINE_PLUGIN_EVALUATOR( test_plugin, test_b_operation, test_b );
+OFFER_DEFINE_PLUGIN_EVALUATOR( test_plugin, test_a_operation, test_a );
+OFFER_DEFINE_PLUGIN_EVALUATOR( test_plugin, test_b_operation, test_b );
 
 void test_a_evaluator::do_apply( const test_a_operation& o )
 {
@@ -75,16 +75,16 @@ test_plugin::test_plugin( application* app ) : plugin( app )
    database().set_custom_operation_interpreter( plugin_name(), _evaluator_registry );
 }
 
-} } // bears::plugin_tests
+} } // offer::plugin_tests
 
-BEARS_DEFINE_PLUGIN( test, bears::plugin_tests::test_plugin )
+OFFER_DEFINE_PLUGIN( test, offer::plugin_tests::test_plugin )
 
-FC_REFLECT( bears::plugin_tests::test_a_operation, (account) )
-FC_REFLECT( bears::plugin_tests::test_b_operation, (account) )
+FC_REFLECT( offer::plugin_tests::test_a_operation, (account) )
+FC_REFLECT( offer::plugin_tests::test_b_operation, (account) )
 
-BEARS_DECLARE_OPERATION_TYPE( bears::plugin_tests::test_op );
-FC_REFLECT_TYPENAME( bears::plugin_tests::test_op );
-BEARS_DEFINE_OPERATION_TYPE( bears::plugin_tests::test_op );
+OFFER_DECLARE_OPERATION_TYPE( offer::plugin_tests::test_op );
+FC_REFLECT_TYPENAME( offer::plugin_tests::test_op );
+OFFER_DEFINE_OPERATION_TYPE( offer::plugin_tests::test_op );
 */
 
 BOOST_FIXTURE_TEST_SUITE( plugin_ops, clean_database_fixture );

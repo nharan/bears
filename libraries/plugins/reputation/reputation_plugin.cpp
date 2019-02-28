@@ -1,23 +1,23 @@
-#include <bears/plugins/reputation/reputation_plugin.hpp>
-#include <bears/plugins/reputation/reputation_objects.hpp>
+#include <offer/plugins/reputation/reputation_plugin.hpp>
+#include <offer/plugins/reputation/reputation_objects.hpp>
 
-#include <bears/chain/util/impacted.hpp>
+#include <offer/chain/util/impacted.hpp>
 
-#include <bears/protocol/config.hpp>
+#include <offer/protocol/config.hpp>
 
-#include <bears/chain/database.hpp>
-#include <bears/chain/index.hpp>
-#include <bears/chain/account_object.hpp>
-#include <bears/chain/comment_object.hpp>
+#include <offer/chain/database.hpp>
+#include <offer/chain/index.hpp>
+#include <offer/chain/account_object.hpp>
+#include <offer/chain/comment_object.hpp>
 
 #include <fc/smart_ref_impl.hpp>
 #include <fc/thread/thread.hpp>
 
 #include <memory>
 
-namespace bears { namespace plugins { namespace reputation {
+namespace offer { namespace plugins { namespace reputation {
 
-using namespace bears::protocol;
+using namespace offer::protocol;
 
 namespace detail {
 
@@ -25,7 +25,7 @@ class reputation_plugin_impl
 {
    public:
       reputation_plugin_impl( reputation_plugin& _plugin ) :
-         _db( appbase::app().get_plugin< bears::plugins::chain::chain_plugin >().db() ),
+         _db( appbase::app().get_plugin< offer::plugins::chain::chain_plugin >().db() ),
          _self( _plugin ) {}
       ~reputation_plugin_impl() {}
 
@@ -215,4 +215,4 @@ void reputation_plugin::plugin_shutdown()
    chain::util::disconnect_signal( my->_post_apply_operation_conn );
 }
 
-} } } // bears::plugins::reputation
+} } } // offer::plugins::reputation

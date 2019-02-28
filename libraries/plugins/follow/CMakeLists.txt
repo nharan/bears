@@ -1,4 +1,4 @@
-file(GLOB HEADERS "include/bears/plugins/follow/*.hpp")
+file(GLOB HEADERS "include/offer/plugins/follow/*.hpp")
 
 add_library( follow_plugin
              follow_plugin.cpp

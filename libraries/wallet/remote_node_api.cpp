@@ -1,6 +1,6 @@
-#include<bears/wallet/remote_node_api.hpp>
+#include<offer/wallet/remote_node_api.hpp>
 
-namespace bears { namespace wallet{
+namespace offer { namespace wallet{
 
 // This class exists only to provide method signature information to fc::api, not to execute calls.
 

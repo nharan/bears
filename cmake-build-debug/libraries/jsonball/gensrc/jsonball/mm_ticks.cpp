@@ -1,5 +1,5 @@
 
-namespace bears { namespace jsonball {
+namespace offer { namespace jsonball {
 
 const char market_maker_ticks[] = {
  91, 91, 34, 49, 48, 48, 34, 44, 34, 49, 48, 48, 48, 48, 48, 48, 48, 48, 48, 48,

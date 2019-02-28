@@ -1,2 +1,2 @@
-seed.bearshares.com:3331          # bearshares
+seed.offerit.org:3331          # offerit
 

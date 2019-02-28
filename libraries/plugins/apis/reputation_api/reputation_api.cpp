@@ -1,16 +1,16 @@
-#include <bears/plugins/reputation_api/reputation_api_plugin.hpp>
-#include <bears/plugins/reputation_api/reputation_api.hpp>
+#include <offer/plugins/reputation_api/reputation_api_plugin.hpp>
+#include <offer/plugins/reputation_api/reputation_api.hpp>
 
-#include <bears/plugins/reputation/reputation_objects.hpp>
+#include <offer/plugins/reputation/reputation_objects.hpp>
 
-namespace bears { namespace plugins { namespace reputation {
+namespace offer { namespace plugins { namespace reputation {
 
 namespace detail {
 
 class reputation_api_impl
 {
    public:
-      reputation_api_impl() : _db( appbase::app().get_plugin< bears::plugins::chain::chain_plugin >().db() ) {}
+      reputation_api_impl() : _db( appbase::app().get_plugin< offer::plugins::chain::chain_plugin >().db() ) {}
 
       DECLARE_API_IMPL(
          (get_account_reputations)
@@ -50,7 +50,7 @@ DEFINE_API_IMPL( reputation_api_impl, get_account_reputations )
 
 reputation_api::reputation_api(): my( new detail::reputation_api_impl() )
 {
-   JSON_RPC_REGISTER_API( BEARS_REPUTATION_API_PLUGIN_NAME );
+   JSON_RPC_REGISTER_API( OFFER_REPUTATION_API_PLUGIN_NAME );
 }
 
 reputation_api::~reputation_api() {}
@@ -59,4 +59,4 @@ DEFINE_READ_APIS( reputation_api,
    (get_account_reputations)
 )
 
-} } } // bears::plugins::reputation
+} } } // offer::plugins::reputation

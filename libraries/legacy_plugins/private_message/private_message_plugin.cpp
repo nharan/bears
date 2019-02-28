@@ -22,22 +22,22 @@
  * THE SOFTWARE.
  */
 
-#include <bears/private_message/private_message_evaluators.hpp>
-#include <bears/private_message/private_message_operations.hpp>
-#include <bears/private_message/private_message_plugin.hpp>
+#include <offer/private_message/private_message_evaluators.hpp>
+#include <offer/private_message/private_message_operations.hpp>
+#include <offer/private_message/private_message_plugin.hpp>
 
-#include <bears/app/impacted.hpp>
+#include <offer/app/impacted.hpp>
 
-#include <bears/protocol/config.hpp>
+#include <offer/protocol/config.hpp>
 
-#include <bears/chain/database.hpp>
-#include <bears/chain/index.hpp>
-#include <bears/chain/generic_custom_operation_interpreter.hpp>
+#include <offer/chain/database.hpp>
+#include <offer/chain/index.hpp>
+#include <offer/chain/generic_custom_operation_interpreter.hpp>
 
 #include <fc/smart_ref_impl.hpp>
 #include <fc/thread/thread.hpp>
 
-namespace bears { namespace private_message {
+namespace offer { namespace private_message {
 
 namespace detail
 {
@@ -48,20 +48,20 @@ class private_message_plugin_impl
       private_message_plugin_impl(private_message_plugin& _plugin);
       virtual ~private_message_plugin_impl();
 
-      bears::chain::database& database()
+      offer::chain::database& database()
       {
          return _self.database();
       }
 
       private_message_plugin&                                                             _self;
-      std::shared_ptr< generic_custom_operation_interpreter< bears::private_message::private_message_plugin_operation > >   _custom_operation_interpreter;
+      std::shared_ptr< generic_custom_operation_interpreter< offer::private_message::private_message_plugin_operation > >   _custom_operation_interpreter;
       flat_map<string,string>                                                             _tracked_accounts;
 };
 
 private_message_plugin_impl::private_message_plugin_impl( private_message_plugin& _plugin )
    : _self( _plugin )
 {
-   _custom_operation_interpreter = std::make_shared< generic_custom_operation_interpreter< bears::private_message::private_message_plugin_operation > >( database() );
+   _custom_operation_interpreter = std::make_shared< generic_custom_operation_interpreter< offer::private_message::private_message_plugin_operation > >( database() );
 
    _custom_operation_interpreter->register_evaluator< private_message_evaluator >( &_self );
 
@@ -143,7 +143,7 @@ void private_message_plugin::plugin_initialize(const boost::program_options::var
    app().register_api_factory<private_message_api>("private_message_api");
 
    typedef pair<string,string> pairstring;
-   BEARS_LOAD_VALUE_SET(options, "pm-accounts", my->_tracked_accounts, pairstring);
+   OFFER_LOAD_VALUE_SET(options, "pm-accounts", my->_tracked_accounts, pairstring);
 }
 
 vector< message_api_obj > private_message_api::get_inbox( string to, time_point newest, uint16_t limit )const {
@@ -185,6 +185,6 @@ flat_map<string,string> private_message_plugin::tracked_accounts() const
 
 } }
 
-BEARS_DEFINE_PLUGIN( private_message, bears::private_message::private_message_plugin )
+OFFER_DEFINE_PLUGIN( private_message, offer::private_message::private_message_plugin )
 
-BEARS_DEFINE_OPERATION_TYPE( bears::private_message::private_message_plugin_operation )
+OFFER_DEFINE_OPERATION_TYPE( offer::private_message::private_message_plugin_operation )

@@ -1,12 +1,12 @@
 Quickstart
 ----------
 
-### Get current bearsd
+### Get current offerd
 Use docker:
 ```
 docker run \
-    -d -p 3331:3331 -p 6990:6990 --name bearsd-default \
-    --restart unless-stopped bearshares/bears
+    -d -p 3331:3331 -p 6990:6990 --name offerd-default \
+    --restart unless-stopped offerit/offer
 ```
 #### Low memory node?
 Above runs low memory node, which is suitable for:
@@ -18,9 +18,9 @@ For full api node use:
 ```
 docker run \
     --env USE_WAY_TOO_MUCH_RAM=1 --env USE_FULL_WEB_NODE=1 \
-    -d -p 3331:3331 -p 6990:6990 --name bearsd-full \
+    -d -p 3331:3331 -p 6990:6990 --name offerd-full \
     --restart unless-stopped \
-    bearshares/bears
+    offerit/offer
 ```
 ### Configure for your use case
 #### Full API node
@@ -42,9 +42,9 @@ This configuration exists in Docker with the following command
 
 ```
 docker run -d --env TRACK_ACCOUNT="yourexchangeid" \
-    --name bearsd \
+    --name offerd \
     --restart unless-stopped \
-    bearshares/bears
+    offerit/offer
 ```
 
 ### Resources usage

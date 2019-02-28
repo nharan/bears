@@ -1,11 +1,11 @@
 
-#include <bears/protocol/operations.hpp>
+#include <offer/protocol/operations.hpp>
 
 #include <fc/io/json.hpp>
 
 #include <boost/algorithm/string.hpp>
 
-using namespace bears::protocol;
+using namespace offer::protocol;
 using boost::container::flat_map;
 using std::string;
 using std::vector;

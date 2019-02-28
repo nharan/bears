@@ -1,10 +1,10 @@
 
-add_library( bears_plugins
+add_library( offer_plugins
    mf_plugins.cpp
-   ${CMAKE_CURRENT_SOURCE_DIR}/include/bears/manifest/plugins.hpp
+   ${CMAKE_CURRENT_SOURCE_DIR}/include/offer/manifest/plugins.hpp
 )
 
-target_link_libraries( bears_plugins appbase fc
+target_link_libraries( offer_plugins appbase fc
 
    tags_plugin
 
@@ -72,12 +72,12 @@ target_link_libraries( bears_plugins appbase fc
 
 )
 
-target_include_directories( bears_plugins
+target_include_directories( offer_plugins
    PUBLIC "${CMAKE_CURRENT_SOURCE_DIR}/include"
    )
 
 INSTALL( TARGETS
-   bears_plugins
+   offer_plugins
 
    RUNTIME DESTINATION bin
    LIBRARY DESTINATION lib

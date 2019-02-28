@@ -17,7 +17,7 @@ add_library( {plugin_provider}_{plugin_name}
              {plugin_name}_api.cpp
            )
 
-target_link_libraries( {plugin_provider}_{plugin_name} bearshares_app bearshares_chain bearshares_protocol )
+target_link_libraries( {plugin_provider}_{plugin_name} offerit_app offerit_chain offerit_protocol )
 target_include_directories( {plugin_provider}_{plugin_name}
                             PUBLIC "${{CMAKE_CURRENT_SOURCE_DIR}}/include" )
 """,
@@ -28,7 +28,7 @@ target_include_directories( {plugin_provider}_{plugin_name}
 
 #include <fc/api.hpp>
 
-namespace bears {{ namespace app {{
+namespace offer {{ namespace app {{
    struct api_context;
 }} }}
 
@@ -41,7 +41,7 @@ class {plugin_name}_api_impl;
 class {plugin_name}_api
 {{
    public:
-      {plugin_name}_api( const bears::app::api_context& ctx );
+      {plugin_name}_api( const offer::app::api_context& ctx );
 
       void on_api_startup();
 
@@ -62,7 +62,7 @@ FC_API( {plugin_provider}::plugin::{plugin_name}::{plugin_name}_api,
 """
 #pragma once
 
-#include <bears/app/plugin.hpp>
+#include <offer/app/plugin.hpp>
 
 namespace {plugin_provider} {{ namespace plugin {{ namespace {plugin_name} {{
 
@@ -70,10 +70,10 @@ namespace detail {{
 class {plugin_name}_plugin_impl;
 }}
 
-class {plugin_name}_plugin : public bears::app::plugin
+class {plugin_name}_plugin : public offer::app::plugin
 {{
    public:
-      {plugin_name}_plugin( bears::app::application* app );
+      {plugin_name}_plugin( offer::app::application* app );
       virtual ~{plugin_name}_plugin();
 
       virtual std::string plugin_name()const override;
@@ -90,8 +90,8 @@ class {plugin_name}_plugin : public bears::app::plugin
 
 "{plugin_name}_api.cpp" :
 """
-#include <bears/app/api_context.hpp>
-#include <bears/app/application.hpp>
+#include <offer/app/api_context.hpp>
+#include <offer/app/application.hpp>
 
 #include <{plugin_provider}/plugins/{plugin_name}/{plugin_name}_api.hpp>
 #include <{plugin_provider}/plugins/{plugin_name}/{plugin_name}_plugin.hpp>
@@ -103,14 +103,14 @@ namespace detail {{
 class {plugin_name}_api_impl
 {{
    public:
-      {plugin_name}_api_impl( bears::app::application& _app );
+      {plugin_name}_api_impl( offer::app::application& _app );
 
       std::shared_ptr< {plugin_provider}::plugin::{plugin_name}::{plugin_name}_plugin > get_plugin();
 
-      bears::app::application& app;
+      offer::app::application& app;
 }};
 
-{plugin_name}_api_impl::{plugin_name}_api_impl( bears::app::application& _app ) : app( _app )
+{plugin_name}_api_impl::{plugin_name}_api_impl( offer::app::application& _app ) : app( _app )
 {{}}
 
 std::shared_ptr< {plugin_provider}::plugin::{plugin_name}::{plugin_name}_plugin > {plugin_name}_api_impl::get_plugin()
@@ -120,7 +120,7 @@ std::shared_ptr< {plugin_provider}::plugin::{plugin_name}::{plugin_name}_plugin 
 
 }} // detail
 
-{plugin_name}_api::{plugin_name}_api( const bears::app::api_context& ctx )
+{plugin_name}_api::{plugin_name}_api( const offer::app::api_context& ctx )
 {{
    my = std::make_shared< detail::{plugin_name}_api_impl >(ctx.app);
 }}
@@ -145,7 +145,7 @@ namespace detail {{
 class {plugin_name}_plugin_impl
 {{
    public:
-      {plugin_name}_plugin_impl( bears::app::application& app );
+      {plugin_name}_plugin_impl( offer::app::application& app );
       virtual ~{plugin_name}_plugin_impl();
 
       virtual std::string plugin_name()const;
@@ -154,11 +154,11 @@ class {plugin_name}_plugin_impl
       virtual void plugin_shutdown();
       void on_applied_block( const chain::signed_block& b );
 
-      bears::app::application& _app;
+      offer::app::application& _app;
       boost::signals2::scoped_connection _applied_block_conn;
 }};
 
-{plugin_name}_plugin_impl::{plugin_name}_plugin_impl( bears::app::application& app )
+{plugin_name}_plugin_impl::{plugin_name}_plugin_impl( offer::app::application& app )
   : _app(app) {{}}
 
 {plugin_name}_plugin_impl::~{plugin_name}_plugin_impl() {{}}
@@ -189,7 +189,7 @@ void {plugin_name}_plugin_impl::on_applied_block( const chain::signed_block& b )
 
 }}
 
-{plugin_name}_plugin::{plugin_name}_plugin( bears::app::application* app )
+{plugin_name}_plugin::{plugin_name}_plugin( offer::app::application* app )
    : plugin(app)
 {{
    FC_ASSERT( app != nullptr );
@@ -220,7 +220,7 @@ void {plugin_name}_plugin::plugin_shutdown()
 
 }} }} }} // {plugin_provider}::plugin::{plugin_name}
 
-BEARS_DEFINE_PLUGIN( {plugin_name}, {plugin_provider}::plugin::{plugin_name}::{plugin_name}_plugin )
+OFFER_DEFINE_PLUGIN( {plugin_name}, {plugin_provider}::plugin::{plugin_name}::{plugin_name}_plugin )
 """,
 }
 
@@ -230,7 +230,7 @@ import sys
 
 def main(argv):
     parser = argparse.ArgumentParser()
-    parser.add_argument("provider", help="Name of plugin provider (bears for plugins developed by Bearshares)")
+    parser.add_argument("provider", help="Name of plugin provider (offer for plugins developed by Offerit)")
     parser.add_argument("name", help="Name of plugin to create")
     args = parser.parse_args(argv[1:])
     ctx = {

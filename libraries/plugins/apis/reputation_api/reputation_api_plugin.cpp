@@ -1,8 +1,8 @@
-#include <bears/plugins/reputation_api/reputation_api_plugin.hpp>
-#include <bears/plugins/reputation_api/reputation_api.hpp>
+#include <offer/plugins/reputation_api/reputation_api_plugin.hpp>
+#include <offer/plugins/reputation_api/reputation_api.hpp>
 
 
-namespace bears { namespace plugins { namespace reputation {
+namespace offer { namespace plugins { namespace reputation {
 
 reputation_api_plugin::reputation_api_plugin() {}
 reputation_api_plugin::~reputation_api_plugin() {}
@@ -17,4 +17,4 @@ void reputation_api_plugin::plugin_initialize( const variables_map& options )
 void reputation_api_plugin::plugin_startup() {}
 void reputation_api_plugin::plugin_shutdown() {}
 
-} } } // bears::plugins::reputation
+} } } // offer::plugins::reputation

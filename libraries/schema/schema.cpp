@@ -1,9 +1,9 @@
 
-#include <bears/schema/schema.hpp>
+#include <offer/schema/schema.hpp>
 
 #include <set>
 
-namespace bears { namespace schema {
+namespace offer { namespace schema {
 
 namespace detail {
 

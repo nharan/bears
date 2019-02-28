@@ -1,4 +1,4 @@
-#include <bears/utilities/logging_config.hpp>
+#include <offer/utilities/logging_config.hpp>
 
 #include <fc/exception/exception.hpp>
 
@@ -8,7 +8,7 @@
 
 #include <vector>
 
-namespace bears { namespace utilities {
+namespace offer { namespace utilities {
 
 using std::string;
 using std::vector;

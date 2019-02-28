@@ -1,11 +1,11 @@
 
 
-#include <bears/plugins/auth_util/auth_util_api.hpp>
-#include <bears/plugins/auth_util/auth_util_plugin.hpp>
+#include <offer/plugins/auth_util/auth_util_api.hpp>
+#include <offer/plugins/auth_util/auth_util_plugin.hpp>
 
 #include <string>
 
-namespace bears { namespace plugin { namespace auth_util {
+namespace offer { namespace plugin { namespace auth_util {
 
 auth_util_plugin::auth_util_plugin( application* app ) : plugin( app ) {}
 auth_util_plugin::~auth_util_plugin() {}
@@ -28,6 +28,6 @@ void auth_util_plugin::plugin_shutdown()
 {
 }
 
-} } } // bears::plugin::auth_util
+} } } // offer::plugin::auth_util
 
-BEARS_DEFINE_PLUGIN( auth_util, bears::plugin::auth_util::auth_util_plugin )
+OFFER_DEFINE_PLUGIN( auth_util, offer::plugin::auth_util::auth_util_plugin )

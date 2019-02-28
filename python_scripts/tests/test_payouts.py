@@ -9,8 +9,8 @@ from pathlib import Path
 from time import sleep
 
 # local imports
-from bearsdebugnode import DebugNode
-from bearsapi.bearsnoderpc import BearsNodeRPC
+from offerdebugnode import DebugNode
+from offerapi.offernoderpc import OfferNodeRPC
 
 WAITING = True
 
@@ -20,9 +20,9 @@ def main( ):
       print( "This script only works on POSIX systems" )
       return
 
-   parser = ArgumentParser( description='Run a bearsd debug node on an existing chain, trigger a hardfork' \
+   parser = ArgumentParser( description='Run a offerd debug node on an existing chain, trigger a hardfork' \
                               ' and verify hardfork does not break invariants or block production' )
-   parser.add_argument( '--bearsd', '-s', type=str, required=True, help='The location of a bearsd binary to run the debug node' )
+   parser.add_argument( '--offerd', '-s', type=str, required=True, help='The location of a offerd binary to run the debug node' )
    parser.add_argument( '--data-dir', '-d', type=str, required=True, help='The location of an existing data directory. ' + \
                         'The debug node will pull blocks from this directory when replaying the chain. The directory ' + \
                         'will not be changed.' )
@@ -31,19 +31,19 @@ def main( ):
 
    args = parser.parse_args()
 
-   bearsd = Path( args.bearsd )
-   if( not bearsd.exists() ):
-      print( 'Error: bearsd does not exist.' )
+   offerd = Path( args.offerd )
+   if( not offerd.exists() ):
+      print( 'Error: offerd does not exist.' )
       return
 
-   bearsd = bearsd.resolve()
-   if( not bearsd.is_file() ):
-      print( 'Error: bearsd is not a file.' )
+   offerd = offerd.resolve()
+   if( not offerd.is_file() ):
+      print( 'Error: offerd is not a file.' )
       return
 
    data_dir = Path( args.data_dir )
    if( not data_dir.exists() ):
-      print( 'Error: data_dir does not exist or is not a properly constructed bearsd data directory' )
+      print( 'Error: data_dir does not exist or is not a properly constructed offerd data directory' )
 
    data_dir = data_dir.resolve()
    if( not data_dir.is_dir() ):
@@ -51,11 +51,11 @@ def main( ):
 
    signal.signal( signal.SIGINT, sigint_handler )
 
-   debug_node = DebugNode( str( bearsd ), str( data_dir ), bearsd_err=sys.stderr )
+   debug_node = DebugNode( str( offerd ), str( data_dir ), offerd_err=sys.stderr )
 
    with debug_node :
 
-      run_bearsd_tests( debug_node )
+      run_offerd_tests( debug_node )
 
       if( args.pause_node ):
          print( "Letting the node hang for manual inspection..." )
@@ -66,8 +66,8 @@ def main( ):
          sleep( 1 )
 
 
-def run_bearsd_tests( debug_node ):
-   from bearsapi.bearsnoderpc import BearsNodeRPC
+def run_offerd_tests( debug_node ):
+   from offerapi.offernoderpc import OfferNodeRPC
 
    try:
       print( 'Replaying blocks...', )
@@ -81,7 +81,7 @@ def run_bearsd_tests( debug_node ):
       print( "Triggering payouts" )
       sys.stdout.flush()
       debug_node.debug_generate_blocks_until( 1467590400 - 3 )
-      rpc = BearsNodeRPC( 'ws://127.0.0.1:8095', '', '' )
+      rpc = OfferNodeRPC( 'ws://127.0.0.1:8095', '', '' )
       ret = rpc.lookup_accounts( '', str( 0xFFFFFFFF ) )
 
       debug_node.debug_generate_blocks( 1 )
@@ -114,7 +114,7 @@ def run_bearsd_tests( debug_node ):
       '''
       print( "Printing account reward dump:" )
       sorted_rewards = sorted( account_rewards.items(), key=operator.itemgetter(1) )
-      print( "account, curation_bears" )
+      print( "account, curation_offer" )
       for rew in sorted_rewards:
          print( rew[0] + ', ' + str( rew[1] ) + ', ' + str( vote_count[ rew[0] ] ) )
 

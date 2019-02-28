@@ -1,11 +1,11 @@
-#include <bears/plugins/account_by_key/account_by_key_plugin.hpp>
-#include <bears/plugins/account_by_key/account_by_key_objects.hpp>
+#include <offer/plugins/account_by_key/account_by_key_plugin.hpp>
+#include <offer/plugins/account_by_key/account_by_key_objects.hpp>
 
-#include <bears/chain/account_object.hpp>
-#include <bears/chain/database.hpp>
-#include <bears/chain/index.hpp>
+#include <offer/chain/account_object.hpp>
+#include <offer/chain/database.hpp>
+#include <offer/chain/index.hpp>
 
-namespace bears { namespace plugins { namespace account_by_key {
+namespace offer { namespace plugins { namespace account_by_key {
 
 namespace detail {
 
@@ -13,7 +13,7 @@ class account_by_key_plugin_impl
 {
    public:
       account_by_key_plugin_impl( account_by_key_plugin& _plugin ) :
-         _db( appbase::app().get_plugin< bears::plugins::chain::chain_plugin >().db() ),
+         _db( appbase::app().get_plugin< offer::plugins::chain::chain_plugin >().db() ),
          _self( _plugin ) {}
 
       void on_pre_apply_operation( const operation_notification& note );
@@ -138,7 +138,7 @@ struct post_operation_visitor
 
    void operator()( const hardfork_operation& op )const
    {
-      if( op.hardfork_id == BEARS_HARDFORK_0_9 )
+      if( op.hardfork_id == OFFER_HARDFORK_0_9 )
       {
          auto& db = _plugin._db;
 
@@ -246,7 +246,7 @@ void account_by_key_plugin::plugin_initialize( const boost::program_options::var
    try
    {
       ilog( "Initializing account_by_key plugin" );
-      chain::database& db = appbase::app().get_plugin< bears::plugins::chain::chain_plugin >().db();
+      chain::database& db = appbase::app().get_plugin< offer::plugins::chain::chain_plugin >().db();
 
       my->_pre_apply_operation_conn = db.add_pre_apply_operation_handler( [&]( const operation_notification& note ){ my->on_pre_apply_operation( note ); }, *this, 0 );
       my->_post_apply_operation_conn = db.add_post_apply_operation_handler( [&]( const operation_notification& note ){ my->on_post_apply_operation( note ); }, *this, 0 );
@@ -264,4 +264,4 @@ void account_by_key_plugin::plugin_shutdown()
    chain::util::disconnect_signal( my->_post_apply_operation_conn );
 }
 
-} } } // bears::plugins::account_by_key
+} } } // offer::plugins::account_by_key

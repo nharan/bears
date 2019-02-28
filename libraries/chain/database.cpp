@@ -1,30 +1,30 @@
-#include <bears/protocol/bears_operations.hpp>
+#include <offer/protocol/offer_operations.hpp>
 
-#include <bears/chain/block_summary_object.hpp>
-#include <bears/chain/compound.hpp>
-#include <bears/chain/custom_operation_interpreter.hpp>
-#include <bears/chain/database.hpp>
-#include <bears/chain/database_exceptions.hpp>
-#include <bears/chain/db_with.hpp>
-#include <bears/chain/evaluator_registry.hpp>
-#include <bears/chain/global_property_object.hpp>
-#include <bears/chain/history_object.hpp>
-#include <bears/chain/index.hpp>
-#include <bears/chain/pending_required_action_object.hpp>
-#include <bears/chain/pending_optional_action_object.hpp>
-#include <bears/chain/smt_objects.hpp>
-#include <bears/chain/bears_evaluator.hpp>
-#include <bears/chain/bears_objects.hpp>
-#include <bears/chain/transaction_object.hpp>
-#include <bears/chain/shared_db_merkle.hpp>
-#include <bears/chain/witness_schedule.hpp>
+#include <offer/chain/block_summary_object.hpp>
+#include <offer/chain/compound.hpp>
+#include <offer/chain/custom_operation_interpreter.hpp>
+#include <offer/chain/database.hpp>
+#include <offer/chain/database_exceptions.hpp>
+#include <offer/chain/db_with.hpp>
+#include <offer/chain/evaluator_registry.hpp>
+#include <offer/chain/global_property_object.hpp>
+#include <offer/chain/history_object.hpp>
+#include <offer/chain/index.hpp>
+#include <offer/chain/pending_required_action_object.hpp>
+#include <offer/chain/pending_optional_action_object.hpp>
+#include <offer/chain/smt_objects.hpp>
+#include <offer/chain/offer_evaluator.hpp>
+#include <offer/chain/offer_objects.hpp>
+#include <offer/chain/transaction_object.hpp>
+#include <offer/chain/shared_db_merkle.hpp>
+#include <offer/chain/witness_schedule.hpp>
 
-#include <bears/chain/util/asset.hpp>
-#include <bears/chain/util/reward.hpp>
-#include <bears/chain/util/uint256.hpp>
-#include <bears/chain/util/reward.hpp>
-#include <bears/chain/util/manabar.hpp>
-#include <bears/chain/util/rd_setup.hpp>
+#include <offer/chain/util/asset.hpp>
+#include <offer/chain/util/reward.hpp>
+#include <offer/chain/util/uint256.hpp>
+#include <offer/chain/util/reward.hpp>
+#include <offer/chain/util/manabar.hpp>
+#include <offer/chain/util/rd_setup.hpp>
 
 #include <fc/smart_ref_impl.hpp>
 #include <fc/uint128.hpp>
@@ -40,7 +40,7 @@
 #include <fstream>
 #include <functional>
 
-namespace bears { namespace chain {
+namespace offer { namespace chain {
 
 struct object_schema_repr
 {
@@ -64,19 +64,19 @@ struct db_schema
 
 } }
 
-FC_REFLECT( bears::chain::object_schema_repr, (space_type)(type) )
-FC_REFLECT( bears::chain::operation_schema_repr, (id)(type) )
-FC_REFLECT( bears::chain::db_schema, (types)(object_types)(operation_type)(custom_operation_types) )
+FC_REFLECT( offer::chain::object_schema_repr, (space_type)(type) )
+FC_REFLECT( offer::chain::operation_schema_repr, (id)(type) )
+FC_REFLECT( offer::chain::db_schema, (types)(object_types)(operation_type)(custom_operation_types) )
 
-namespace bears { namespace chain {
+namespace offer { namespace chain {
 
 using boost::container::flat_set;
 
 struct reward_fund_context
 {
    uint128_t   recent_claims = 0;
-   asset       reward_balance = asset( 0, BEARS_SYMBOL );
-   share_type  bears_awarded = 0;
+   asset       reward_balance = asset( 0, OFFER_SYMBOL );
+   share_type  offer_awarded = 0;
 };
 
 class database_impl
@@ -175,12 +175,12 @@ uint32_t database::reindex( const open_args& args )
    reindex_notification note;
 
    BOOST_SCOPE_EXIT(this_,&note) {
-      BEARS_TRY_NOTIFY(this_->_post_reindex_signal, note);
+      OFFER_TRY_NOTIFY(this_->_post_reindex_signal, note);
    } BOOST_SCOPE_EXIT_END
 
    try
    {
-      BEARS_TRY_NOTIFY(_pre_reindex_signal, note);
+      OFFER_TRY_NOTIFY(_pre_reindex_signal, note);
 
       ilog( "Reindexing Blockchain" );
       wipe( args.data_dir, args.shared_mem_dir, false );
@@ -188,7 +188,7 @@ uint32_t database::reindex( const open_args& args )
       _fork_db.reset();    // override effect of _fork_db.start_block() call in open()
 
       auto start = fc::time_point::now();
-      BEARS_ASSERT( _block_log.head(), block_log_exception, "No blocks in block log. Cannot reindex an empty chain." );
+      OFFER_ASSERT( _block_log.head(), block_log_exception, "No blocks in block log. Cannot reindex an empty chain." );
 
       ilog( "Replaying blocks..." );
 
@@ -398,14 +398,14 @@ std::vector< block_id_type > database::get_block_ids_on_fork( block_id_type head
 
 chain_id_type database::get_chain_id() const
 {
-   return bears_chain_id;
+   return offer_chain_id;
 }
 
 void database::set_chain_id( const chain_id_type& chain_id )
 {
-   bears_chain_id = chain_id;
+   offer_chain_id = chain_id;
 
-   idump( (bears_chain_id) );
+   idump( (offer_chain_id) );
 }
 
 void database::foreach_block(std::function<bool(const signed_block_header&, const signed_block&)> processor) const
@@ -521,7 +521,7 @@ const escrow_object* database::find_escrow( const account_name_type& name, uint3
 
 const limit_order_object& database::get_limit_order( const account_name_type& name, uint32_t orderid )const
 { try {
-   if( !has_hardfork( BEARS_HARDFORK_0_6__127 ) )
+   if( !has_hardfork( OFFER_HARDFORK_0_6__127 ) )
       orderid = orderid & 0x0000FFFF;
 
    return get< limit_order_object, by_account >( boost::make_tuple( name, orderid ) );
@@ -529,7 +529,7 @@ const limit_order_object& database::get_limit_order( const account_name_type& na
 
 const limit_order_object* database::find_limit_order( const account_name_type& name, uint32_t orderid )const
 {
-   if( !has_hardfork( BEARS_HARDFORK_0_6__127 ) )
+   if( !has_hardfork( OFFER_HARDFORK_0_6__127 ) )
       orderid = orderid & 0x0000FFFF;
 
    return find< limit_order_object, by_account >( boost::make_tuple( name, orderid ) );
@@ -572,7 +572,7 @@ const hardfork_property_object& database::get_hardfork_property_object()const
 
 const time_point_sec database::calculate_discussion_payout_time( const comment_object& comment )const
 {
-   if( has_hardfork( BEARS_HARDFORK_0_17__769 ) || comment.parent_author == BEARS_ROOT_POST_PARENT )
+   if( has_hardfork( OFFER_HARDFORK_0_17__769 ) || comment.parent_author == OFFER_ROOT_POST_PARENT )
       return comment.cashout_time;
    else
       return get< comment_object >( comment.root_comment ).cashout_time;
@@ -580,7 +580,7 @@ const time_point_sec database::calculate_discussion_payout_time( const comment_o
 
 const reward_fund_object& database::get_reward_fund( const comment_object& c ) const
 {
-   return get< reward_fund_object, by_name >( BEARS_POST_REWARD_FUND_NAME );
+   return get< reward_fund_object, by_name >( OFFER_POST_REWARD_FUND_NAME );
 }
 
 asset database::get_effective_coining_shares( const account_object& account, asset_symbol_type coined_symbol )const
@@ -588,7 +588,7 @@ asset database::get_effective_coining_shares( const account_object& account, ass
    if( coined_symbol == COINS_SYMBOL )
       return account.coining_shares - account.delegated_coining_shares + account.received_coining_shares;
 
-#ifdef BEARS_ENABLE_SMT
+#ifdef OFFER_ENABLE_SMT
    FC_ASSERT( coined_symbol.space() == asset_symbol_type::smt_nai_space );
    FC_ASSERT( coined_symbol.is_coining() );
 
@@ -607,7 +607,7 @@ asset database::get_effective_coining_shares( const account_object& account, ass
 uint32_t database::witness_participation_rate()const
 {
    const dynamic_global_property_object& dpo = get_dynamic_global_properties();
-   return uint64_t(BEARS_100_PERCENT) * dpo.recent_slots_filled.popcount() / 128;
+   return uint64_t(OFFER_100_PERCENT) * dpo.recent_slots_filled.popcount() / 128;
 }
 
 void database::add_checkpoints( const flat_map< uint32_t, block_id_type >& checkpts )
@@ -881,23 +881,23 @@ signed_block database::_generate_block(
    pending_block.timestamp = when;
    pending_block.witness = witness_owner;
 
-   if( has_hardfork( BEARS_HARDFORK_0_5__54 ) )
+   if( has_hardfork( OFFER_HARDFORK_0_5__54 ) )
    {
       const auto& witness = get_witness( witness_owner );
 
-      if( witness.running_version != BEARS_BLOCKCHAIN_VERSION )
-         pending_block.extensions.insert( block_header_extensions( BEARS_BLOCKCHAIN_VERSION ) );
+      if( witness.running_version != OFFER_BLOCKCHAIN_VERSION )
+         pending_block.extensions.insert( block_header_extensions( OFFER_BLOCKCHAIN_VERSION ) );
 
       const auto& hfp = get_hardfork_property_object();
 
-      if( hfp.current_hardfork_version < BEARS_BLOCKCHAIN_VERSION // Binary is newer hardfork than has been applied
+      if( hfp.current_hardfork_version < OFFER_BLOCKCHAIN_VERSION // Binary is newer hardfork than has been applied
          && ( witness.hardfork_version_vote != _hardfork_versions[ hfp.last_hardfork + 1 ] || witness.hardfork_time_vote != _hardfork_times[ hfp.last_hardfork + 1 ] ) ) // Witness vote does not match binary configuration
       {
          // Make vote match binary configuration
          pending_block.extensions.insert( block_header_extensions( hardfork_version_vote( _hardfork_versions[ hfp.last_hardfork + 1 ], _hardfork_times[ hfp.last_hardfork + 1 ] ) ) );
       }
-      else if( hfp.current_hardfork_version == BEARS_BLOCKCHAIN_VERSION // Binary does not know of a new hardfork
-         && witness.hardfork_version_vote > BEARS_BLOCKCHAIN_VERSION ) // Voting for hardfork in the future, that we do not know of...
+      else if( hfp.current_hardfork_version == OFFER_BLOCKCHAIN_VERSION // Binary does not know of a new hardfork
+         && witness.hardfork_version_vote > OFFER_BLOCKCHAIN_VERSION ) // Voting for hardfork in the future, that we do not know of...
       {
          // Make vote match binary configuration. This is vote to not apply the new hardfork.
          pending_block.extensions.insert( block_header_extensions( hardfork_version_vote( _hardfork_versions[ hfp.last_hardfork ], _hardfork_times[ hfp.last_hardfork ] ) ) );
@@ -906,7 +906,7 @@ signed_block database::_generate_block(
 
    // The 4 is for the max size of the transaction vector length
    size_t total_block_size = fc::raw::pack_size( pending_block ) + 4;
-   auto maximum_block_size = get_dynamic_global_properties().maximum_block_size; //BEARS_MAX_BLOCK_SIZE;
+   auto maximum_block_size = get_dynamic_global_properties().maximum_block_size; //OFFER_MAX_BLOCK_SIZE;
 
    //
    // The following code throws away existing pending_tx_session and
@@ -923,7 +923,7 @@ signed_block database::_generate_block(
    _pending_tx_session = start_undo_session();
 
    FC_TODO( "Safe to remove after HF20 occurs because no more pre HF20 blocks will be generated" );
-   if( has_hardfork( BEARS_HARDFORK_0_20 ) )
+   if( has_hardfork( OFFER_HARDFORK_0_20 ) )
    {
       /// modify current witness so transaction evaluators can know who included the transaction
       modify( get_dynamic_global_properties(), [&]( dynamic_global_property_object& dgp )
@@ -983,12 +983,12 @@ signed_block database::_generate_block(
    pending_block.transaction_merkle_root = pending_block.calculate_merkle_root();
 
    if( !(skip & skip_witness_signature) )
-      pending_block.sign( block_signing_private_key, has_hardfork( BEARS_HARDFORK_0_20__1944 ) ? fc::ecc::bip_0062 : fc::ecc::fc_canonical );
+      pending_block.sign( block_signing_private_key, has_hardfork( OFFER_HARDFORK_0_20__1944 ) ? fc::ecc::bip_0062 : fc::ecc::fc_canonical );
 
    // TODO:  Move this to _push_block() so session is restored.
    if( !(skip & skip_block_size_check) )
    {
-      FC_ASSERT( fc::raw::pack_size(pending_block) <= BEARS_MAX_BLOCK_SIZE );
+      FC_ASSERT( fc::raw::pack_size(pending_block) <= OFFER_MAX_BLOCK_SIZE );
    }
 
    push_block( pending_block, skip );
@@ -1009,7 +1009,7 @@ void database::pop_block()
 
       /// save the head block so we can recover its transactions
       optional<signed_block> head_block = fetch_block_by_id( head_id );
-      BEARS_ASSERT( head_block.valid(), pop_empty_chain, "there are no blocks to pop" );
+      OFFER_ASSERT( head_block.valid(), pop_empty_chain, "there are no blocks to pop" );
 
       _fork_db.pop_block();
       undo();
@@ -1060,7 +1060,7 @@ void database::post_push_virtual_operation( const operation& op )
 
 void database::notify_pre_apply_operation( const operation_notification& note )
 {
-   BEARS_TRY_NOTIFY( _pre_apply_operation_signal, note )
+   OFFER_TRY_NOTIFY( _pre_apply_operation_signal, note )
 }
 
 void database::push_required_action( const required_automated_action& a )
@@ -1081,52 +1081,52 @@ void database::push_optional_action( const optional_automated_action& a )
 
 void database::notify_pre_apply_required_action( const required_action_notification& note )
 {
-   BEARS_TRY_NOTIFY( _pre_apply_required_action_signal, note );
+   OFFER_TRY_NOTIFY( _pre_apply_required_action_signal, note );
 }
 
 void database::notify_post_apply_required_action( const required_action_notification& note )
 {
-   BEARS_TRY_NOTIFY( _post_apply_required_action_signal, note );
+   OFFER_TRY_NOTIFY( _post_apply_required_action_signal, note );
 }
 
 void database::notify_pre_apply_optional_action( const optional_action_notification& note )
 {
-   BEARS_TRY_NOTIFY( _pre_apply_optional_action_signal, note );
+   OFFER_TRY_NOTIFY( _pre_apply_optional_action_signal, note );
 }
 
 void database::notify_post_apply_optional_action( const optional_action_notification& note )
 {
-   BEARS_TRY_NOTIFY( _post_apply_optional_action_signal, note );
+   OFFER_TRY_NOTIFY( _post_apply_optional_action_signal, note );
 }
 
 void database::notify_post_apply_operation( const operation_notification& note )
 {
-   BEARS_TRY_NOTIFY( _post_apply_operation_signal, note )
+   OFFER_TRY_NOTIFY( _post_apply_operation_signal, note )
 }
 
 void database::notify_pre_apply_block( const block_notification& note )
 {
-   BEARS_TRY_NOTIFY( _pre_apply_block_signal, note )
+   OFFER_TRY_NOTIFY( _pre_apply_block_signal, note )
 }
 
 void database::notify_irreversible_block( uint32_t block_num )
 {
-   BEARS_TRY_NOTIFY( _on_irreversible_block, block_num )
+   OFFER_TRY_NOTIFY( _on_irreversible_block, block_num )
 }
 
 void database::notify_post_apply_block( const block_notification& note )
 {
-   BEARS_TRY_NOTIFY( _post_apply_block_signal, note )
+   OFFER_TRY_NOTIFY( _post_apply_block_signal, note )
 }
 
 void database::notify_pre_apply_transaction( const transaction_notification& note )
 {
-   BEARS_TRY_NOTIFY( _pre_apply_transaction_signal, note )
+   OFFER_TRY_NOTIFY( _pre_apply_transaction_signal, note )
 }
 
 void database::notify_post_apply_transaction( const transaction_notification& note )
 {
-   BEARS_TRY_NOTIFY( _post_apply_transaction_signal, note )
+   OFFER_TRY_NOTIFY( _post_apply_transaction_signal, note )
 }
 
 account_name_type database::get_scheduled_witness( uint32_t slot_num )const
@@ -1142,7 +1142,7 @@ fc::time_point_sec database::get_slot_time(uint32_t slot_num)const
    if( slot_num == 0 )
       return fc::time_point_sec();
 
-   auto interval = BEARS_BLOCK_INTERVAL;
+   auto interval = OFFER_BLOCK_INTERVAL;
    const dynamic_global_property_object& dpo = get_dynamic_global_properties();
 
    if( head_block_num() == 0 )
@@ -1167,20 +1167,20 @@ uint32_t database::get_slot_at_time(fc::time_point_sec when)const
    fc::time_point_sec first_slot_time = get_slot_time( 1 );
    if( when < first_slot_time )
       return 0;
-   return (when - first_slot_time).to_seconds() / BEARS_BLOCK_INTERVAL + 1;
+   return (when - first_slot_time).to_seconds() / OFFER_BLOCK_INTERVAL + 1;
 }
 
 /**
- *  Converts BEARS into bsd and adds it to to_account while reducing the BEARS supply
- *  by BEARS and increasing the bsd supply by the specified amount.
+ *  Converts OFFER into bsd and adds it to to_account while reducing the OFFER supply
+ *  by OFFER and increasing the bsd supply by the specified amount.
  */
-std::pair< asset, asset > database::create_bsd( const account_object& to_account, asset bears, bool to_reward_balance )
+std::pair< asset, asset > database::create_bsd( const account_object& to_account, asset offer, bool to_reward_balance )
 {
-   std::pair< asset, asset > assets( asset( 0, BSD_SYMBOL ), asset( 0, BEARS_SYMBOL ) );
+   std::pair< asset, asset > assets( asset( 0, BSD_SYMBOL ), asset( 0, OFFER_SYMBOL ) );
 
    try
    {
-      if( bears.amount == 0 )
+      if( offer.amount == 0 )
          return assets;
 
       const auto& median_price = get_feed_history().current_median_history;
@@ -1188,34 +1188,34 @@ std::pair< asset, asset > database::create_bsd( const account_object& to_account
 
       if( !median_price.is_null() )
       {
-         auto to_bsd = ( gpo.bsd_print_rate * bears.amount ) / BEARS_100_PERCENT;
-         auto to_bears = bears.amount - to_bsd;
+         auto to_bsd = ( gpo.bsd_print_rate * offer.amount ) / OFFER_100_PERCENT;
+         auto to_offer = offer.amount - to_bsd;
 
-         auto bsd = asset( to_bsd, BEARS_SYMBOL ) * median_price;
+         auto bsd = asset( to_bsd, OFFER_SYMBOL ) * median_price;
 
          if( to_reward_balance )
          {
             adjust_reward_balance( to_account, bsd );
-            adjust_reward_balance( to_account, asset( to_bears, BEARS_SYMBOL ) );
+            adjust_reward_balance( to_account, asset( to_offer, OFFER_SYMBOL ) );
          }
          else
          {
             adjust_balance( to_account, bsd );
-            adjust_balance( to_account, asset( to_bears, BEARS_SYMBOL ) );
+            adjust_balance( to_account, asset( to_offer, OFFER_SYMBOL ) );
          }
 
-         adjust_supply( asset( -to_bsd, BEARS_SYMBOL ) );
+         adjust_supply( asset( -to_bsd, OFFER_SYMBOL ) );
          adjust_supply( bsd );
          assets.first = bsd;
-         assets.second = asset( to_bears, BEARS_SYMBOL );
+         assets.second = asset( to_offer, OFFER_SYMBOL );
       }
       else
       {
-         adjust_balance( to_account, bears );
-         assets.second = bears;
+         adjust_balance( to_account, offer );
+         assets.second = offer;
       }
    }
-   FC_CAPTURE_LOG_AND_RETHROW( (to_account.name)(bears) )
+   FC_CAPTURE_LOG_AND_RETHROW( (to_account.name)(offer) )
 
    return assets;
 }
@@ -1232,7 +1232,7 @@ asset create_coining2( database& db, const account_object& to_account, asset liq
       auto calculate_new_coining = [ liquid ] ( price coining_share_price ) -> asset
          {
          /**
-          *  The ratio of total_coining_shares / total_coining_fund_bears should not
+          *  The ratio of total_coining_shares / total_coining_fund_offer should not
           *  change as the result of the user adding funds
           *
           *  V / C  = (V+Vn) / (C+Cn)
@@ -1248,7 +1248,7 @@ asset create_coining2( database& db, const account_object& to_account, asset liq
          return new_coining;
          };
 
-#ifdef BEARS_ENABLE_SMT
+#ifdef OFFER_ENABLE_SMT
       if( liquid.symbol.space() == asset_symbol_type::smt_nai_space )
       {
          FC_ASSERT( liquid.symbol.is_coining() == false );
@@ -1285,7 +1285,7 @@ asset create_coining2( database& db, const account_object& to_account, asset liq
       }
 #endif
 
-      FC_ASSERT( liquid.symbol == BEARS_SYMBOL );
+      FC_ASSERT( liquid.symbol == OFFER_SYMBOL );
       // ^ A novelty, needed but risky in case someone managed to slip BSD/TESTS here in blockchain history.
       // Get share price.
       const auto& cprops = db.get_dynamic_global_properties();
@@ -1300,11 +1300,11 @@ asset create_coining2( database& db, const account_object& to_account, asset liq
       }
       else
       {
-         if( db.has_hardfork( BEARS_HARDFORK_0_20__2539 ) )
+         if( db.has_hardfork( OFFER_HARDFORK_0_20__2539 ) )
          {
             db.modify( to_account, [&]( account_object& a )
             {
-               util::manabar_params params( util::get_effective_coining_shares( a ), BEARS_VOTING_MANA_REGENERATION_SECONDS );
+               util::manabar_params params( util::get_effective_coining_shares( a ), OFFER_VOTING_MANA_REGENERATION_SECONDS );
 FC_TODO( "Set skip_cap_regen=true without breaking consensus" );
                a.voting_manabar.regenerate_mana( params, db.head_block_time() );
                a.voting_manabar.use_mana( -new_coining.amount.value );
@@ -1319,11 +1319,11 @@ FC_TODO( "Set skip_cap_regen=true without breaking consensus" );
          if( to_reward_balance )
          {
             props.pending_rewarded_coining_shares += new_coining;
-            props.pending_rewarded_coining_bears += liquid;
+            props.pending_rewarded_coining_offer += liquid;
          }
          else
          {
-            props.total_coining_fund_bears += liquid;
+            props.total_coining_fund_offer += liquid;
             props.total_coining_shares += new_coining;
          }
       } );
@@ -1338,7 +1338,7 @@ FC_TODO( "Set skip_cap_regen=true without breaking consensus" );
 
 /**
  * @param to_account - the account to receive the new coining shares
- * @param liquid     - BEARS or liquid SMT to be converted to coining shares
+ * @param liquid     - OFFER or liquid SMT to be converted to coining shares
  */
 asset database::create_coining( const account_object& to_account, asset liquid, bool to_reward_balance )
 {
@@ -1363,27 +1363,27 @@ uint32_t database::get_pow_summary_target()const
    if( dgp.num_pow_witnesses >= 1004 )
       return 0;
 
-   if( has_hardfork( BEARS_HARDFORK_0_16__551 ) )
+   if( has_hardfork( OFFER_HARDFORK_0_16__551 ) )
       return (0xFE00 - 0x0040 * dgp.num_pow_witnesses ) << 0x10;
    else
       return (0xFC00 - 0x0040 * dgp.num_pow_witnesses) << 0x10;
 }
 
 void database::adjust_proxied_witness_votes( const account_object& a,
-                                   const std::array< share_type, BEARS_MAX_PROXY_RECURSION_DEPTH+1 >& delta,
+                                   const std::array< share_type, OFFER_MAX_PROXY_RECURSION_DEPTH+1 >& delta,
                                    int depth )
 {
-   if( a.proxy != BEARS_PROXY_TO_SELF_ACCOUNT )
+   if( a.proxy != OFFER_PROXY_TO_SELF_ACCOUNT )
    {
       /// nested proxies are not supported, vote will not propagate
-      if( depth >= BEARS_MAX_PROXY_RECURSION_DEPTH )
+      if( depth >= OFFER_MAX_PROXY_RECURSION_DEPTH )
          return;
 
       const auto& proxy = get_account( a.proxy );
 
       modify( proxy, [&]( account_object& a )
       {
-         for( int i = BEARS_MAX_PROXY_RECURSION_DEPTH - depth - 1; i >= 0; --i )
+         for( int i = OFFER_MAX_PROXY_RECURSION_DEPTH - depth - 1; i >= 0; --i )
          {
             a.proxied_vsf_votes[i+depth] += delta[i];
          }
@@ -1394,7 +1394,7 @@ void database::adjust_proxied_witness_votes( const account_object& a,
    else
    {
       share_type total_delta = 0;
-      for( int i = BEARS_MAX_PROXY_RECURSION_DEPTH - depth; i >= 0; --i )
+      for( int i = OFFER_MAX_PROXY_RECURSION_DEPTH - depth; i >= 0; --i )
          total_delta += delta[i];
       adjust_witness_votes( a, total_delta );
    }
@@ -1402,10 +1402,10 @@ void database::adjust_proxied_witness_votes( const account_object& a,
 
 void database::adjust_proxied_witness_votes( const account_object& a, share_type delta, int depth )
 {
-   if( a.proxy != BEARS_PROXY_TO_SELF_ACCOUNT )
+   if( a.proxy != OFFER_PROXY_TO_SELF_ACCOUNT )
    {
       /// nested proxies are not supported, vote will not propagate
-      if( depth >= BEARS_MAX_PROXY_RECURSION_DEPTH )
+      if( depth >= OFFER_MAX_PROXY_RECURSION_DEPTH )
          return;
 
       const auto& proxy = get_account( a.proxy );
@@ -1446,13 +1446,13 @@ void database::adjust_witness_vote( const witness_object& witness, share_type de
       w.votes += delta;
       FC_ASSERT( w.votes <= get_dynamic_global_properties().total_coining_shares.amount, "", ("w.votes", w.votes)("props",get_dynamic_global_properties().total_coining_shares) );
 
-      if( has_hardfork( BEARS_HARDFORK_0_2 ) )
-         w.virtual_scheduled_time = w.virtual_last_update + (BEARS_VIRTUAL_SCHEDULE_LAP_LENGTH2 - w.virtual_position)/(w.votes.value+1);
+      if( has_hardfork( OFFER_HARDFORK_0_2 ) )
+         w.virtual_scheduled_time = w.virtual_last_update + (OFFER_VIRTUAL_SCHEDULE_LAP_LENGTH2 - w.virtual_position)/(w.votes.value+1);
       else
-         w.virtual_scheduled_time = w.virtual_last_update + (BEARS_VIRTUAL_SCHEDULE_LAP_LENGTH - w.virtual_position)/(w.votes.value+1);
+         w.virtual_scheduled_time = w.virtual_last_update + (OFFER_VIRTUAL_SCHEDULE_LAP_LENGTH - w.virtual_position)/(w.votes.value+1);
 
       /** witnesses with a low number of votes could overflow the time field and end up with a scheduled time in the past */
-      if( has_hardfork( BEARS_HARDFORK_0_4 ) )
+      if( has_hardfork( OFFER_HARDFORK_0_4 ) )
       {
          if( w.virtual_scheduled_time < wso.current_virtual_time )
             w.virtual_scheduled_time = fc::uint128::max_value();
@@ -1471,7 +1471,7 @@ void database::clear_witness_votes( const account_object& a )
       remove(current);
    }
 
-   if( has_hardfork( BEARS_HARDFORK_0_6__104 ) )
+   if( has_hardfork( OFFER_HARDFORK_0_6__104 ) )
       modify( a, [&](account_object& acc )
       {
          acc.witnesses_voted_for = 0;
@@ -1480,23 +1480,23 @@ void database::clear_witness_votes( const account_object& a )
 
 void database::clear_null_account_balance()
 {
-   if( !has_hardfork( BEARS_HARDFORK_0_14__327 ) ) return;
+   if( !has_hardfork( OFFER_HARDFORK_0_14__327 ) ) return;
 
-   const auto& null_account = get_account( BEARS_NULL_ACCOUNT );
-   asset total_bears( 0, BEARS_SYMBOL );
+   const auto& null_account = get_account( OFFER_NULL_ACCOUNT );
+   asset total_offer( 0, OFFER_SYMBOL );
    asset total_bsd( 0, BSD_SYMBOL );
    asset total_coins( 0, COINS_SYMBOL );
 
-   asset coining_shares_bears_value = asset( 0, BEARS_SYMBOL );
+   asset coining_shares_offer_value = asset( 0, OFFER_SYMBOL );
 
    if( null_account.balance.amount > 0 )
    {
-      total_bears += null_account.balance;
+      total_offer += null_account.balance;
    }
 
    if( null_account.savings_balance.amount > 0 )
    {
-      total_bears += null_account.savings_balance;
+      total_offer += null_account.savings_balance;
    }
 
    if( null_account.bsd_balance.amount > 0 )
@@ -1512,14 +1512,14 @@ void database::clear_null_account_balance()
    if( null_account.coining_shares.amount > 0 )
    {
       const auto& gpo = get_dynamic_global_properties();
-      coining_shares_bears_value = null_account.coining_shares * gpo.get_coining_share_price();
-      total_bears += coining_shares_bears_value;
+      coining_shares_offer_value = null_account.coining_shares * gpo.get_coining_share_price();
+      total_offer += coining_shares_offer_value;
       total_coins += null_account.coining_shares;
    }
 
-   if( null_account.reward_bears_balance.amount > 0 )
+   if( null_account.reward_offer_balance.amount > 0 )
    {
-      total_bears += null_account.reward_bears_balance;
+      total_offer += null_account.reward_offer_balance;
    }
 
    if( null_account.reward_bsd_balance.amount > 0 )
@@ -1529,17 +1529,17 @@ void database::clear_null_account_balance()
 
    if( null_account.reward_coining_balance.amount > 0 )
    {
-      total_bears += null_account.reward_coining_bears;
+      total_offer += null_account.reward_coining_offer;
       total_coins += null_account.reward_coining_balance;
    }
 
-   if( (total_bears.amount.value == 0) && (total_bsd.amount.value == 0) && (total_coins.amount.value == 0) )
+   if( (total_offer.amount.value == 0) && (total_bsd.amount.value == 0) && (total_coins.amount.value == 0) )
       return;
 
    operation vop_op = clear_null_account_balance_operation();
    clear_null_account_balance_operation& vop = vop_op.get< clear_null_account_balance_operation >();
-   if( total_bears.amount.value > 0 )
-      vop.total_cleared.push_back( total_bears );
+   if( total_offer.amount.value > 0 )
+      vop.total_cleared.push_back( total_offer );
    if( total_coins.amount.value > 0 )
       vop.total_cleared.push_back( total_coins );
    if( total_bsd.amount.value > 0 )
@@ -1575,7 +1575,7 @@ void database::clear_null_account_balance()
       modify( gpo, [&]( dynamic_global_property_object& g )
       {
          g.total_coining_shares -= null_account.coining_shares;
-         g.total_coining_fund_bears -= coining_shares_bears_value;
+         g.total_coining_fund_offer -= coining_shares_offer_value;
       });
 
       modify( null_account, [&]( account_object& a )
@@ -1584,9 +1584,9 @@ void database::clear_null_account_balance()
       });
    }
 
-   if( null_account.reward_bears_balance.amount > 0 )
+   if( null_account.reward_offer_balance.amount > 0 )
    {
-      adjust_reward_balance( null_account, -null_account.reward_bears_balance );
+      adjust_reward_balance( null_account, -null_account.reward_offer_balance );
    }
 
    if( null_account.reward_bsd_balance.amount > 0 )
@@ -1601,20 +1601,20 @@ void database::clear_null_account_balance()
       modify( gpo, [&]( dynamic_global_property_object& g )
       {
          g.pending_rewarded_coining_shares -= null_account.reward_coining_balance;
-         g.pending_rewarded_coining_bears -= null_account.reward_coining_bears;
+         g.pending_rewarded_coining_offer -= null_account.reward_coining_offer;
       });
 
       modify( null_account, [&]( account_object& a )
       {
-         a.reward_coining_bears.amount = 0;
+         a.reward_coining_offer.amount = 0;
          a.reward_coining_balance.amount = 0;
       });
    }
 
    //////////////////////////////////////////////////////////////
 
-   if( total_bears.amount > 0 )
-      adjust_supply( -total_bears );
+   if( total_offer.amount > 0 )
+      adjust_supply( -total_offer );
 
    if( total_bsd.amount > 0 )
       adjust_supply( -total_bsd );
@@ -1640,7 +1640,7 @@ void database::adjust_rshares2( const comment_object& c, fc::uint128_t old_rshar
 
 void database::update_owner_authority( const account_object& account, const authority& owner_authority )
 {
-   if( head_block_num() >= BEARS_OWNER_AUTH_HISTORY_TRACKING_START_BLOCK_NUM )
+   if( head_block_num() >= OFFER_OWNER_AUTH_HISTORY_TRACKING_START_BLOCK_NUM )
    {
       create< owner_authority_history_object >( [&]( owner_authority_history_object& hist )
       {
@@ -1682,18 +1682,18 @@ void database::process_coining_withdrawals()
       else
          to_withdraw = std::min( from_account.coining_shares.amount, from_account.coining_withdraw_rate.amount ).value;
 
-      share_type coins_deposited_as_bears = 0;
+      share_type coins_deposited_as_offer = 0;
       share_type coins_deposited_as_coins = 0;
-      asset total_bears_converted = asset( 0, BEARS_SYMBOL );
+      asset total_offer_converted = asset( 0, OFFER_SYMBOL );
 
-      // Do two passes, the first for coins, the second for bears. Try to maintain as much accuracy for coins as possible.
+      // Do two passes, the first for coins, the second for offer. Try to maintain as much accuracy for coins as possible.
       for( auto itr = didx.upper_bound( boost::make_tuple( from_account.name, account_name_type() ) );
            itr != didx.end() && itr->from_account == from_account.name;
            ++itr )
       {
          if( itr->auto_coin )
          {
-            share_type to_deposit = ( ( fc::uint128_t ( to_withdraw.value ) * itr->percent ) / BEARS_100_PERCENT ).to_uint64();
+            share_type to_deposit = ( ( fc::uint128_t ( to_withdraw.value ) * itr->percent ) / OFFER_100_PERCENT ).to_uint64();
             coins_deposited_as_coins += to_deposit;
 
             if( to_deposit > 0 )
@@ -1724,25 +1724,25 @@ void database::process_coining_withdrawals()
          {
             const auto& to_account = get< account_object, by_name >( itr->to_account );
 
-            share_type to_deposit = ( ( fc::uint128_t ( to_withdraw.value ) * itr->percent ) / BEARS_100_PERCENT ).to_uint64();
-            coins_deposited_as_bears += to_deposit;
-            auto converted_bears = asset( to_deposit, COINS_SYMBOL ) * cprops.get_coining_share_price();
-            total_bears_converted += converted_bears;
+            share_type to_deposit = ( ( fc::uint128_t ( to_withdraw.value ) * itr->percent ) / OFFER_100_PERCENT ).to_uint64();
+            coins_deposited_as_offer += to_deposit;
+            auto converted_offer = asset( to_deposit, COINS_SYMBOL ) * cprops.get_coining_share_price();
+            total_offer_converted += converted_offer;
 
             if( to_deposit > 0 )
             {
-               operation vop = fill_coining_withdraw_operation( from_account.name, to_account.name, asset( to_deposit, COINS_SYMBOL), converted_bears );
+               operation vop = fill_coining_withdraw_operation( from_account.name, to_account.name, asset( to_deposit, COINS_SYMBOL), converted_offer );
 
                pre_push_virtual_operation( vop );
 
                modify( to_account, [&]( account_object& a )
                {
-                  a.balance += converted_bears;
+                  a.balance += converted_offer;
                });
 
                modify( cprops, [&]( dynamic_global_property_object& o )
                {
-                  o.total_coining_fund_bears -= converted_bears;
+                  o.total_coining_fund_offer -= converted_offer;
                   o.total_coining_shares.amount -= to_deposit;
                });
 
@@ -1751,17 +1751,17 @@ void database::process_coining_withdrawals()
          }
       }
 
-      share_type to_convert = to_withdraw - coins_deposited_as_bears - coins_deposited_as_coins;
+      share_type to_convert = to_withdraw - coins_deposited_as_offer - coins_deposited_as_coins;
       FC_ASSERT( to_convert >= 0, "Deposited more coins than were supposed to be withdrawn" );
 
-      auto converted_bears = asset( to_convert, COINS_SYMBOL ) * cprops.get_coining_share_price();
-      operation vop = fill_coining_withdraw_operation( from_account.name, from_account.name, asset( to_convert, COINS_SYMBOL ), converted_bears );
+      auto converted_offer = asset( to_convert, COINS_SYMBOL ) * cprops.get_coining_share_price();
+      operation vop = fill_coining_withdraw_operation( from_account.name, from_account.name, asset( to_convert, COINS_SYMBOL ), converted_offer );
       pre_push_virtual_operation( vop );
 
       modify( from_account, [&]( account_object& a )
       {
          a.coining_shares.amount -= to_withdraw;
-         a.balance += converted_bears;
+         a.balance += converted_offer;
          a.withdrawn += to_withdraw;
 
          if( a.withdrawn >= a.to_withdraw || a.coining_shares.amount == 0 )
@@ -1771,13 +1771,13 @@ void database::process_coining_withdrawals()
          }
          else
          {
-            a.next_coining_withdrawal += fc::seconds( BEARS_COINING_WITHDRAW_INTERVAL_SECONDS );
+            a.next_coining_withdrawal += fc::seconds( OFFER_COINING_WITHDRAW_INTERVAL_SECONDS );
          }
       });
 
       modify( cprops, [&]( dynamic_global_property_object& o )
       {
-         o.total_coining_fund_bears -= converted_bears;
+         o.total_coining_fund_offer -= converted_offer;
          o.total_coining_shares.amount -= to_convert;
       });
 
@@ -1851,7 +1851,7 @@ share_type database::pay_curators( const comment_object& c, share_type& max_rewa
                unclaimed_rewards -= claim;
                const auto& voter = get( item->voter );
                operation vop = curation_reward_operation( voter.name, asset(0, COINS_SYMBOL), c.author, to_string( c.permlink ) );
-               create_coining2( *this, voter, asset( claim, BEARS_SYMBOL ), has_hardfork( BEARS_HARDFORK_0_17__659 ),
+               create_coining2( *this, voter, asset( claim, OFFER_SYMBOL ), has_hardfork( OFFER_HARDFORK_0_17__659 ),
                   [&]( const asset& reward )
                   {
                      vop.get< curation_reward_operation >().reward = reward;
@@ -1891,7 +1891,7 @@ share_type database::cashout_comment_helper( util::comment_reward_context& ctx, 
       {
          fill_comment_reward_context_local_state( ctx, comment );
 
-         if( has_hardfork( BEARS_HARDFORK_0_17__774 ) )
+         if( has_hardfork( OFFER_HARDFORK_0_17__774 ) )
          {
             const auto rf = get_reward_fund( comment );
             ctx.reward_curve = rf.author_reward_curve;
@@ -1903,7 +1903,7 @@ share_type database::cashout_comment_helper( util::comment_reward_context& ctx, 
 
          if( reward_tokens > 0 )
          {
-            share_type curation_tokens = ( ( reward_tokens * get_curation_rewards_percent( comment ) ) / BEARS_100_PERCENT ).to_uint64();
+            share_type curation_tokens = ( ( reward_tokens * get_curation_rewards_percent( comment ) ) / OFFER_100_PERCENT ).to_uint64();
             share_type author_tokens = reward_tokens.to_uint64() - curation_tokens;
 
             share_type curation_remainder = pay_curators( comment, curation_tokens );
@@ -1916,21 +1916,21 @@ share_type database::cashout_comment_helper( util::comment_reward_context& ctx, 
 
             for( auto& b : comment.beneficiaries )
             {
-               auto benefactor_tokens = ( author_tokens * b.weight ) / BEARS_100_PERCENT;
-               auto benefactor_coining_bears = benefactor_tokens;
-               auto vop = comment_benefactor_reward_operation( b.account, comment.author, to_string( comment.permlink ), asset( 0, BSD_SYMBOL ), asset( 0, BEARS_SYMBOL ), asset( 0, COINS_SYMBOL ) );
+               auto benefactor_tokens = ( author_tokens * b.weight ) / OFFER_100_PERCENT;
+               auto benefactor_coining_offer = benefactor_tokens;
+               auto vop = comment_benefactor_reward_operation( b.account, comment.author, to_string( comment.permlink ), asset( 0, BSD_SYMBOL ), asset( 0, OFFER_SYMBOL ), asset( 0, COINS_SYMBOL ) );
 
-               if( has_hardfork( BEARS_HARDFORK_0_20__2022 ) )
+               if( has_hardfork( OFFER_HARDFORK_0_20__2022 ) )
                {
-                  auto benefactor_bsd_bears = ( benefactor_tokens * comment.percent_bears_dollars ) / ( 2 * BEARS_100_PERCENT ) ;
-                  benefactor_coining_bears  = benefactor_tokens - benefactor_bsd_bears;
-                  auto bsd_payout           = create_bsd( get_account( b.account ), asset( benefactor_bsd_bears, BEARS_SYMBOL ), true );
+                  auto benefactor_bsd_offer = ( benefactor_tokens * comment.percent_offer_dollars ) / ( 2 * OFFER_100_PERCENT ) ;
+                  benefactor_coining_offer  = benefactor_tokens - benefactor_bsd_offer;
+                  auto bsd_payout           = create_bsd( get_account( b.account ), asset( benefactor_bsd_offer, OFFER_SYMBOL ), true );
 
                   vop.bsd_payout   = bsd_payout.first; // BSD portion
-                  vop.bears_payout = bsd_payout.second; // BEARS portion
+                  vop.offer_payout = bsd_payout.second; // OFFER portion
                }
 
-               create_coining2( *this, get_account( b.account ), asset( benefactor_coining_bears, BEARS_SYMBOL ), has_hardfork( BEARS_HARDFORK_0_17__659 ),
+               create_coining2( *this, get_account( b.account ), asset( benefactor_coining_offer, OFFER_SYMBOL ), has_hardfork( OFFER_HARDFORK_0_17__659 ),
                [&]( const asset& reward )
                {
                   vop.coining_payout = reward;
@@ -1943,24 +1943,24 @@ share_type database::cashout_comment_helper( util::comment_reward_context& ctx, 
 
             author_tokens -= total_beneficiary;
 
-            auto bsd_bears     = ( author_tokens * comment.percent_bears_dollars ) / ( 2 * BEARS_100_PERCENT ) ;
-            auto coining_bears = author_tokens - bsd_bears;
+            auto bsd_offer     = ( author_tokens * comment.percent_offer_dollars ) / ( 2 * OFFER_100_PERCENT ) ;
+            auto coining_offer = author_tokens - bsd_offer;
 
             const auto& author = get_account( comment.author );
-            auto bsd_payout = create_bsd( author, asset( bsd_bears, BEARS_SYMBOL ), has_hardfork( BEARS_HARDFORK_0_17__659 ) );
+            auto bsd_payout = create_bsd( author, asset( bsd_offer, OFFER_SYMBOL ), has_hardfork( OFFER_HARDFORK_0_17__659 ) );
             operation vop = author_reward_operation( comment.author, to_string( comment.permlink ), bsd_payout.first, bsd_payout.second, asset( 0, COINS_SYMBOL ) );
 
-            create_coining2( *this, author, asset( coining_bears, BEARS_SYMBOL ), has_hardfork( BEARS_HARDFORK_0_17__659 ),
+            create_coining2( *this, author, asset( coining_offer, OFFER_SYMBOL ), has_hardfork( OFFER_HARDFORK_0_17__659 ),
                [&]( const asset& coining_payout )
                {
                   vop.get< author_reward_operation >().coining_payout = coining_payout;
                   pre_push_virtual_operation( vop );
                } );
 
-            adjust_total_payout( comment, bsd_payout.first + to_bsd( bsd_payout.second + asset( coining_bears, BEARS_SYMBOL ) ), to_bsd( asset( curation_tokens, BEARS_SYMBOL ) ), to_bsd( asset( total_beneficiary, BEARS_SYMBOL ) ) );
+            adjust_total_payout( comment, bsd_payout.first + to_bsd( bsd_payout.second + asset( coining_offer, OFFER_SYMBOL ) ), to_bsd( asset( curation_tokens, OFFER_SYMBOL ) ), to_bsd( asset( total_beneficiary, OFFER_SYMBOL ) ) );
 
             post_push_virtual_operation( vop );
-            vop = comment_reward_operation( comment.author, to_string( comment.permlink ), to_bsd( asset( claimed_reward, BEARS_SYMBOL ) ) );
+            vop = comment_reward_operation( comment.author, to_string( comment.permlink ), to_bsd( asset( claimed_reward, OFFER_SYMBOL ) ) );
             pre_push_virtual_operation( vop );
             post_push_virtual_operation( vop );
 
@@ -1978,7 +1978,7 @@ share_type database::cashout_comment_helper( util::comment_reward_context& ctx, 
 
          }
 
-         if( !has_hardfork( BEARS_HARDFORK_0_17__774 ) )
+         if( !has_hardfork( OFFER_HARDFORK_0_17__774 ) )
             adjust_rshares2( comment, util::evaluate_reward_curve( comment.net_rshares.value ), 0 );
       }
 
@@ -1996,14 +1996,14 @@ share_type database::cashout_comment_helper( util::comment_reward_context& ctx, 
          c.total_vote_weight = 0;
          c.max_cashout_time = fc::time_point_sec::maximum();
 
-         if( has_hardfork( BEARS_HARDFORK_0_17__769 ) )
+         if( has_hardfork( OFFER_HARDFORK_0_17__769 ) )
          {
             c.cashout_time = fc::time_point_sec::maximum();
          }
-         else if( c.parent_author == BEARS_ROOT_POST_PARENT )
+         else if( c.parent_author == OFFER_ROOT_POST_PARENT )
          {
-            if( has_hardfork( BEARS_HARDFORK_0_12__177 ) && c.last_payout == fc::time_point_sec::min() )
-               c.cashout_time = head_block_time() + BEARS_SECOND_CASHOUT_WINDOW;
+            if( has_hardfork( OFFER_HARDFORK_0_12__177 ) && c.last_payout == fc::time_point_sec::min() )
+               c.cashout_time = head_block_time() + OFFER_SECOND_CASHOUT_WINDOW;
             else
                c.cashout_time = fc::time_point_sec::maximum();
          }
@@ -2019,7 +2019,7 @@ share_type database::cashout_comment_helper( util::comment_reward_context& ctx, 
       {
          const auto& cur_vote = *vote_itr;
          ++vote_itr;
-         if( !has_hardfork( BEARS_HARDFORK_0_12__177 ) || calculate_discussion_payout_time( comment ) != fc::time_point_sec::maximum() )
+         if( !has_hardfork( OFFER_HARDFORK_0_12__177 ) || calculate_discussion_payout_time( comment ) != fc::time_point_sec::maximum() )
          {
             modify( cur_vote, [&]( comment_vote_object& cvo )
             {
@@ -2043,15 +2043,15 @@ void database::process_comment_cashout()
    /// don't allow any content to get paid out until the website is ready to launch
    /// and people have had a week to start posting.  The first cashout will be the biggest because it
    /// will represent 2+ months of rewards.
-   if( !has_hardfork( BEARS_FIRST_CASHOUT_TIME ) )
+   if( !has_hardfork( OFFER_FIRST_CASHOUT_TIME ) )
       return;
 
    const auto& gpo = get_dynamic_global_properties();
    util::comment_reward_context ctx;
-   ctx.current_bears_price = get_feed_history().current_median_history;
+   ctx.current_offer_price = get_feed_history().current_median_history;
 
    vector< reward_fund_context > funds;
-   vector< share_type > bears_awarded;
+   vector< share_type > offer_awarded;
    const auto& reward_idx = get_index< reward_fund_index, by_id >();
 
    // Decay recent rshares of each fund
@@ -2062,10 +2062,10 @@ void database::process_comment_cashout()
       {
          fc::microseconds decay_time;
 
-         if( has_hardfork( BEARS_HARDFORK_0_19__1051 ) )
-            decay_time = BEARS_RECENT_RSHARES_DECAY_TIME_HF19;
+         if( has_hardfork( OFFER_HARDFORK_0_19__1051 ) )
+            decay_time = OFFER_RECENT_RSHARES_DECAY_TIME_HF19;
          else
-            decay_time = BEARS_RECENT_RSHARES_DECAY_TIME_HF17;
+            decay_time = OFFER_RECENT_RSHARES_DECAY_TIME_HF17;
 
          rfo.recent_claims -= ( rfo.recent_claims * ( head_block_time() - rfo.last_update ).to_seconds() ) / decay_time.to_seconds();
          rfo.last_update = head_block_time();
@@ -2086,7 +2086,7 @@ void database::process_comment_cashout()
 
    auto current = cidx.begin();
    //  add all rshares about to be cashed out to the reward funds. This ensures equal satoshi per rshare payment
-   if( has_hardfork( BEARS_HARDFORK_0_17__771 ) )
+   if( has_hardfork( OFFER_HARDFORK_0_17__771 ) )
    {
       while( current != cidx.end() && current->cashout_time <= head_block_time() )
       {
@@ -2117,15 +2117,15 @@ void database::process_comment_cashout()
     */
    while( current != cidx.end() && current->cashout_time <= head_block_time() )
    {
-      if( has_hardfork( BEARS_HARDFORK_0_17__771 ) )
+      if( has_hardfork( OFFER_HARDFORK_0_17__771 ) )
       {
          auto fund_id = get_reward_fund( *current ).id._id;
          ctx.total_reward_shares2 = funds[ fund_id ].recent_claims;
-         ctx.total_reward_fund_bears = funds[ fund_id ].reward_balance;
+         ctx.total_reward_fund_offer = funds[ fund_id ].reward_balance;
 
-         bool forward_curation_remainder = !has_hardfork( BEARS_HARDFORK_0_20__1877 );
+         bool forward_curation_remainder = !has_hardfork( OFFER_HARDFORK_0_20__1877 );
 
-         funds[ fund_id ].bears_awarded += cashout_comment_helper( ctx, *current, forward_curation_remainder );
+         funds[ fund_id ].offer_awarded += cashout_comment_helper( ctx, *current, forward_curation_remainder );
       }
       else
       {
@@ -2134,7 +2134,7 @@ void database::process_comment_cashout()
          {
             const auto& comment = *itr; ++itr;
             ctx.total_reward_shares2 = gpo.total_reward_shares2;
-            ctx.total_reward_fund_bears = gpo.total_reward_fund_bears;
+            ctx.total_reward_fund_offer = gpo.total_reward_fund_offer;
 
             auto reward = cashout_comment_helper( ctx, comment );
 
@@ -2142,7 +2142,7 @@ void database::process_comment_cashout()
             {
                modify( get_dynamic_global_properties(), [&]( dynamic_global_property_object& p )
                {
-                  p.total_reward_fund_bears.amount -= reward;
+                  p.total_reward_fund_offer.amount -= reward;
                });
             }
          }
@@ -2159,14 +2159,14 @@ void database::process_comment_cashout()
          modify( get< reward_fund_object, by_id >( reward_fund_id_type( i ) ), [&]( reward_fund_object& rfo )
          {
             rfo.recent_claims = funds[ i ].recent_claims;
-            rfo.reward_balance -= asset( funds[ i ].bears_awarded, BEARS_SYMBOL );
+            rfo.reward_balance -= asset( funds[ i ].offer_awarded, OFFER_SYMBOL );
          });
       }
    }
 }
 
 /**
- *  Overall the network has an inflation rate of 102% of virtual bears per year
+ *  Overall the network has an inflation rate of 102% of virtual offer per year
  *  90% of inflation is directed to coining shares
  *  10% of inflation is directed to subjective proof of work voting
  *  1% of inflation is directed to liquidity providers
@@ -2180,28 +2180,28 @@ void database::process_funds()
    const auto& props = get_dynamic_global_properties();
    const auto& wso = get_witness_schedule_object();
 
-   if( has_hardfork( BEARS_HARDFORK_0_16__551) )
+   if( has_hardfork( OFFER_HARDFORK_0_16__551) )
    {
       /**
        * At block 7,000,000 have a 9.5% instantaneous inflation rate, decreasing to 0.95% at a rate of 0.01%
        * every 250k blocks. This narrowing will take approximately 20.5 years and will complete on block 220,750,000
        */
-      int64_t start_inflation_rate = int64_t( BEARS_INFLATION_RATE_START_PERCENT );
-      int64_t inflation_rate_adjustment = int64_t( head_block_num() / BEARS_INFLATION_NARROWING_PERIOD );
-      int64_t inflation_rate_floor = int64_t( BEARS_INFLATION_RATE_STOP_PERCENT );
+      int64_t start_inflation_rate = int64_t( OFFER_INFLATION_RATE_START_PERCENT );
+      int64_t inflation_rate_adjustment = int64_t( head_block_num() / OFFER_INFLATION_NARROWING_PERIOD );
+      int64_t inflation_rate_floor = int64_t( OFFER_INFLATION_RATE_STOP_PERCENT );
 
       // below subtraction cannot underflow int64_t because inflation_rate_adjustment is <2^32
       int64_t current_inflation_rate = std::max( start_inflation_rate - inflation_rate_adjustment, inflation_rate_floor );
 
-      auto new_bears = ( props.virtual_supply.amount * current_inflation_rate ) / ( int64_t( BEARS_100_PERCENT ) * int64_t( BEARS_BLOCKS_PER_YEAR ) );
-      auto content_reward = ( new_bears * BEARS_CONTENT_REWARD_PERCENT ) / BEARS_100_PERCENT;
-      if( has_hardfork( BEARS_HARDFORK_0_17__774 ) )
+      auto new_offer = ( props.virtual_supply.amount * current_inflation_rate ) / ( int64_t( OFFER_100_PERCENT ) * int64_t( OFFER_BLOCKS_PER_YEAR ) );
+      auto content_reward = ( new_offer * OFFER_CONTENT_REWARD_PERCENT ) / OFFER_100_PERCENT;
+      if( has_hardfork( OFFER_HARDFORK_0_17__774 ) )
          content_reward = pay_reward_funds( content_reward ); /// 75% to content creator
-      auto coining_reward = ( new_bears * BEARS_COINING_FUND_PERCENT ) / BEARS_100_PERCENT; /// 15% to coining fund
-      auto witness_reward = new_bears - content_reward - coining_reward; /// Remaining 10% to witness pay
+      auto coining_reward = ( new_offer * OFFER_COINING_FUND_PERCENT ) / OFFER_100_PERCENT; /// 15% to coining fund
+      auto witness_reward = new_offer - content_reward - coining_reward; /// Remaining 10% to witness pay
 
       const auto& cwit = get_witness( props.current_witness );
-      witness_reward *= BEARS_MAX_WITNESSES;
+      witness_reward *= OFFER_MAX_WITNESSES;
 
       if( cwit.schedule == witness_object::timeshare )
          witness_reward *= wso.timeshare_weight;
@@ -2214,19 +2214,19 @@ void database::process_funds()
 
       witness_reward /= wso.witness_pay_normalization_factor;
 
-      new_bears = content_reward + coining_reward + witness_reward;
+      new_offer = content_reward + coining_reward + witness_reward;
 
       modify( props, [&]( dynamic_global_property_object& p )
       {
-         p.total_coining_fund_bears += asset( coining_reward, BEARS_SYMBOL );
-         if( !has_hardfork( BEARS_HARDFORK_0_17__774 ) )
-            p.total_reward_fund_bears  += asset( content_reward, BEARS_SYMBOL );
-         p.current_supply           += asset( new_bears, BEARS_SYMBOL );
-         p.virtual_supply           += asset( new_bears, BEARS_SYMBOL );
+         p.total_coining_fund_offer += asset( coining_reward, OFFER_SYMBOL );
+         if( !has_hardfork( OFFER_HARDFORK_0_17__774 ) )
+            p.total_reward_fund_offer  += asset( content_reward, OFFER_SYMBOL );
+         p.current_supply           += asset( new_offer, OFFER_SYMBOL );
+         p.virtual_supply           += asset( new_offer, OFFER_SYMBOL );
       });
 
       operation vop = producer_reward_operation( cwit.owner, asset( 0, COINS_SYMBOL ) );
-      create_coining2( *this, get_account( cwit.owner ), asset( witness_reward, BEARS_SYMBOL ), false,
+      create_coining2( *this, get_account( cwit.owner ), asset( witness_reward, OFFER_SYMBOL ), false,
          [&]( const asset& coining_shares )
          {
             vop.get< producer_reward_operation >().coining_shares = coining_shares;
@@ -2243,15 +2243,15 @@ void database::process_funds()
 
       content_reward = content_reward + curate_reward;
 
-      if( props.head_block_number < BEARS_START_COINING_BLOCK )
+      if( props.head_block_number < OFFER_START_COINING_BLOCK )
          coining_reward.amount = 0;
       else
-         coining_reward.amount.value *= BEARS_INFLATION_NUMBER;
+         coining_reward.amount.value *= OFFER_INFLATION_NUMBER;
 
       modify( props, [&]( dynamic_global_property_object& p )
       {
-          p.total_coining_fund_bears += coining_reward;
-          p.total_reward_fund_bears  += content_reward;
+          p.total_coining_fund_offer += coining_reward;
+          p.total_reward_fund_offer  += content_reward;
           p.current_supply += content_reward + witness_pay + coining_reward;
           p.virtual_supply += content_reward + witness_pay + coining_reward;
       } );
@@ -2301,10 +2301,10 @@ void database::process_subsidized_accounts()
    }
 }
 
-#ifdef BEARS_ENABLE_SMT
+#ifdef OFFER_ENABLE_SMT
 
 template< typename T, bool ALLOW_REMOVE >
-void process_smt_objects_internal( database* db, bears::chain::smt_phase phase )
+void process_smt_objects_internal( database* db, offer::chain::smt_phase phase )
 {
    FC_ASSERT( db != nullptr );
    const auto& idx = db->get_index< smt_event_token_index >().indices().get< T >();
@@ -2337,41 +2337,41 @@ void database::process_smt_objects()
 
 asset database::get_liquidity_reward()const
 {
-   if( has_hardfork( BEARS_HARDFORK_0_12__178 ) )
-      return asset( 0, BEARS_SYMBOL );
+   if( has_hardfork( OFFER_HARDFORK_0_12__178 ) )
+      return asset( 0, OFFER_SYMBOL );
 
    const auto& props = get_dynamic_global_properties();
-   static_assert( BEARS_LIQUIDITY_REWARD_PERIOD_SEC == 60*60, "this code assumes a 1 hour time interval" );
-   asset percent( protocol::calc_percent_reward_per_hour< BEARS_LIQUIDITY_APR_PERCENT >( props.virtual_supply.amount ), BEARS_SYMBOL );
-   return std::max( percent, BEARS_MIN_LIQUIDITY_REWARD );
+   static_assert( OFFER_LIQUIDITY_REWARD_PERIOD_SEC == 60*60, "this code assumes a 1 hour time interval" );
+   asset percent( protocol::calc_percent_reward_per_hour< OFFER_LIQUIDITY_APR_PERCENT >( props.virtual_supply.amount ), OFFER_SYMBOL );
+   return std::max( percent, OFFER_MIN_LIQUIDITY_REWARD );
 }
 
 asset database::get_content_reward()const
 {
    const auto& props = get_dynamic_global_properties();
-   static_assert( BEARS_BLOCK_INTERVAL == 3, "this code assumes a 3-second time interval" );
-   asset percent( protocol::calc_percent_reward_per_block< BEARS_CONTENT_APR_PERCENT >( props.virtual_supply.amount ), BEARS_SYMBOL );
-   return std::max( percent, BEARS_MIN_CONTENT_REWARD );
+   static_assert( OFFER_BLOCK_INTERVAL == 3, "this code assumes a 3-second time interval" );
+   asset percent( protocol::calc_percent_reward_per_block< OFFER_CONTENT_APR_PERCENT >( props.virtual_supply.amount ), OFFER_SYMBOL );
+   return std::max( percent, OFFER_MIN_CONTENT_REWARD );
 }
 
 asset database::get_curation_reward()const
 {
    const auto& props = get_dynamic_global_properties();
-   static_assert( BEARS_BLOCK_INTERVAL == 3, "this code assumes a 3-second time interval" );
-   asset percent( protocol::calc_percent_reward_per_block< BEARS_CURATE_APR_PERCENT >( props.virtual_supply.amount ), BEARS_SYMBOL);
-   return std::max( percent, BEARS_MIN_CURATE_REWARD );
+   static_assert( OFFER_BLOCK_INTERVAL == 3, "this code assumes a 3-second time interval" );
+   asset percent( protocol::calc_percent_reward_per_block< OFFER_CURATE_APR_PERCENT >( props.virtual_supply.amount ), OFFER_SYMBOL);
+   return std::max( percent, OFFER_MIN_CURATE_REWARD );
 }
 
 asset database::get_producer_reward()
 {
    const auto& props = get_dynamic_global_properties();
-   static_assert( BEARS_BLOCK_INTERVAL == 3, "this code assumes a 3-second time interval" );
-   asset percent( protocol::calc_percent_reward_per_block< BEARS_PRODUCER_APR_PERCENT >( props.virtual_supply.amount ), BEARS_SYMBOL);
-   auto pay = std::max( percent, BEARS_MIN_PRODUCER_REWARD );
+   static_assert( OFFER_BLOCK_INTERVAL == 3, "this code assumes a 3-second time interval" );
+   asset percent( protocol::calc_percent_reward_per_block< OFFER_PRODUCER_APR_PERCENT >( props.virtual_supply.amount ), OFFER_SYMBOL);
+   auto pay = std::max( percent, OFFER_MIN_PRODUCER_REWARD );
    const auto& witness_account = get_account( props.current_witness );
 
    /// pay witness in coining shares
-   if( props.head_block_number >= BEARS_START_MINER_VOTING_BLOCK || (witness_account.coining_shares.amount.value == 0) )
+   if( props.head_block_number >= OFFER_START_MINER_VOTING_BLOCK || (witness_account.coining_shares.amount.value == 0) )
    {
       // const auto& witness_obj = get_witness( props.current_witness );
       operation vop = producer_reward_operation( witness_account.name, asset( 0, COINS_SYMBOL ) );
@@ -2399,15 +2399,15 @@ asset database::get_pow_reward()const
    const auto& props = get_dynamic_global_properties();
 
 #ifndef IS_TEST_NET
-   /// 0 block rewards until at least BEARS_MAX_WITNESSES have produced a POW
-   if( props.num_pow_witnesses < BEARS_MAX_WITNESSES && props.head_block_number < BEARS_START_COINING_BLOCK )
-      return asset( 0, BEARS_SYMBOL );
+   /// 0 block rewards until at least OFFER_MAX_WITNESSES have produced a POW
+   if( props.num_pow_witnesses < OFFER_MAX_WITNESSES && props.head_block_number < OFFER_START_COINING_BLOCK )
+      return asset( 0, OFFER_SYMBOL );
 #endif
 
-   static_assert( BEARS_BLOCK_INTERVAL == 3, "this code assumes a 3-second time interval" );
-   static_assert( BEARS_MAX_WITNESSES == 21, "this code assumes 21 per round" );
-   asset percent( calc_percent_reward_per_round< BEARS_POW_APR_PERCENT >( props.virtual_supply.amount ), BEARS_SYMBOL);
-   return std::max( percent, BEARS_MIN_POW_REWARD );
+   static_assert( OFFER_BLOCK_INTERVAL == 3, "this code assumes a 3-second time interval" );
+   static_assert( OFFER_MAX_WITNESSES == 21, "this code assumes 21 per round" );
+   asset percent( calc_percent_reward_per_round< OFFER_POW_APR_PERCENT >( props.virtual_supply.amount ), OFFER_SYMBOL);
+   return std::max( percent, OFFER_MIN_POW_REWARD );
 }
 
 
@@ -2418,7 +2418,7 @@ void database::pay_liquidity_reward()
       return;
 #endif
 
-   if( (head_block_num() % BEARS_LIQUIDITY_REWARD_BLOCKS) == 0 )
+   if( (head_block_num() % OFFER_LIQUIDITY_REWARD_BLOCKS) == 0 )
    {
       auto reward = get_liquidity_reward();
 
@@ -2433,7 +2433,7 @@ void database::pay_liquidity_reward()
          adjust_balance( get(itr->owner), reward );
          modify( *itr, [&]( liquidity_reward_balance_object& obj )
          {
-            obj.bears_volume = 0;
+            obj.offer_volume = 0;
             obj.bsd_volume   = 0;
             obj.last_update  = head_block_time();
             obj.weight = 0;
@@ -2446,12 +2446,12 @@ void database::pay_liquidity_reward()
 
 uint16_t database::get_curation_rewards_percent( const comment_object& c ) const
 {
-   if( has_hardfork( BEARS_HARDFORK_0_17__774 ) )
+   if( has_hardfork( OFFER_HARDFORK_0_17__774 ) )
       return get_reward_fund( c ).percent_curation_rewards;
-   else if( has_hardfork( BEARS_HARDFORK_0_8__116 ) )
-      return BEARS_1_PERCENT * 25;
+   else if( has_hardfork( OFFER_HARDFORK_0_8__116 ) )
+      return OFFER_1_PERCENT * 25;
    else
-      return BEARS_1_PERCENT * 50;
+      return OFFER_1_PERCENT * 50;
 }
 
 share_type database::pay_reward_funds( share_type reward )
@@ -2462,16 +2462,16 @@ share_type database::pay_reward_funds( share_type reward )
    for( auto itr = reward_idx.begin(); itr != reward_idx.end(); ++itr )
    {
       // reward is a per block reward and the percents are 16-bit. This should never overflow
-      auto r = ( reward * itr->percent_content_rewards ) / BEARS_100_PERCENT;
+      auto r = ( reward * itr->percent_content_rewards ) / OFFER_100_PERCENT;
 
       modify( *itr, [&]( reward_fund_object& rfo )
       {
-         rfo.reward_balance += asset( r, BEARS_SYMBOL );
+         rfo.reward_balance += asset( r, OFFER_SYMBOL );
       });
 
       used_rewards += r;
 
-      // Sanity check to ensure we aren't printing more BEARS than has been allocated through inflation
+      // Sanity check to ensure we aren't printing more OFFER than has been allocated through inflation
       FC_ASSERT( used_rewards <= reward );
    }
 
@@ -2480,7 +2480,7 @@ share_type database::pay_reward_funds( share_type reward )
 
 /**
  *  Iterates over all conversion requests with a conversion date before
- *  the head block time and then converts them to/from bears/bsd at the
+ *  the head block time and then converts them to/from offer/bsd at the
  *  current median price feed history price times the premium
  */
 void database::process_conversions()
@@ -2494,7 +2494,7 @@ void database::process_conversions()
       return;
 
    asset net_bsd( 0, BSD_SYMBOL );
-   asset net_bears( 0, BEARS_SYMBOL );
+   asset net_offer( 0, OFFER_SYMBOL );
 
    while( itr != request_by_date.end() && itr->conversion_date <= now )
    {
@@ -2503,7 +2503,7 @@ void database::process_conversions()
       adjust_balance( itr->owner, amount_to_issue );
 
       net_bsd   += itr->amount;
-      net_bears += amount_to_issue;
+      net_offer += amount_to_issue;
 
       push_virtual_operation( fill_convert_request_operation ( itr->owner, itr->requestid, itr->amount, amount_to_issue ) );
 
@@ -2514,21 +2514,21 @@ void database::process_conversions()
    const auto& props = get_dynamic_global_properties();
    modify( props, [&]( dynamic_global_property_object& p )
    {
-       p.current_supply += net_bears;
+       p.current_supply += net_offer;
        p.current_bsd_supply -= net_bsd;
-       p.virtual_supply += net_bears;
+       p.virtual_supply += net_offer;
        p.virtual_supply -= net_bsd * get_feed_history().current_median_history;
    } );
 }
 
-asset database::to_bsd( const asset& bears )const
+asset database::to_bsd( const asset& offer )const
 {
-   return util::to_bsd( get_feed_history().current_median_history, bears );
+   return util::to_bsd( get_feed_history().current_median_history, offer );
 }
 
-asset database::to_bears( const asset& bsd )const
+asset database::to_offer( const asset& bsd )const
 {
-   return util::to_bears( get_feed_history().current_median_history, bsd );
+   return util::to_offer( get_feed_history().current_median_history, bsd );
 }
 
 void database::account_recovery_processing()
@@ -2547,7 +2547,7 @@ void database::account_recovery_processing()
    const auto& hist_idx = get_index< owner_authority_history_index >().indices(); //by id
    auto hist = hist_idx.begin();
 
-   while( hist != hist_idx.end() && time_point_sec( hist->last_valid_time + BEARS_OWNER_AUTH_RECOVERY_PERIOD ) < head_block_time() )
+   while( hist != hist_idx.end() && time_point_sec( hist->last_valid_time + OFFER_OWNER_AUTH_RECOVERY_PERIOD ) < head_block_time() )
    {
       remove( *hist );
       hist = hist_idx.begin();
@@ -2579,7 +2579,7 @@ void database::expire_escrow_ratification()
       const auto& old_escrow = *escrow_itr;
       ++escrow_itr;
 
-      adjust_balance( old_escrow.from, old_escrow.bears_balance );
+      adjust_balance( old_escrow.from, old_escrow.offer_balance );
       adjust_balance( old_escrow.from, old_escrow.bsd_balance );
       adjust_balance( old_escrow.from, old_escrow.pending_fee );
 
@@ -2597,9 +2597,9 @@ void database::process_decline_voting_rights()
       const auto& account = get< account_object, by_name >( itr->account );
 
       /// remove all current votes
-      std::array<share_type, BEARS_MAX_PROXY_RECURSION_DEPTH+1> delta;
+      std::array<share_type, OFFER_MAX_PROXY_RECURSION_DEPTH+1> delta;
       delta[0] = -account.coining_shares.amount;
-      for( int i = 0; i < BEARS_MAX_PROXY_RECURSION_DEPTH; ++i )
+      for( int i = 0; i < OFFER_MAX_PROXY_RECURSION_DEPTH; ++i )
          delta[i+1] = -account.proxied_vsf_votes[i];
       adjust_proxied_witness_votes( account, delta );
 
@@ -2608,7 +2608,7 @@ void database::process_decline_voting_rights()
       modify( account, [&]( account_object& a )
       {
          a.can_vote = false;
-         a.proxy = BEARS_PROXY_TO_SELF_ACCOUNT;
+         a.proxy = OFFER_PROXY_TO_SELF_ACCOUNT;
       });
 
       remove( *itr );
@@ -2683,14 +2683,14 @@ void database::initialize_evaluators()
    _my->_evaluator_registry.register_evaluator< reset_account_evaluator                  >();
    _my->_evaluator_registry.register_evaluator< set_reset_account_evaluator              >();
    _my->_evaluator_registry.register_evaluator< claim_reward_balance_evaluator           >();
-#ifdef BEARS_ENABLE_SMT
+#ifdef OFFER_ENABLE_SMT
    _my->_evaluator_registry.register_evaluator< claim_reward_balance2_evaluator          >();
 #endif
    _my->_evaluator_registry.register_evaluator< account_create_with_delegation_evaluator >();
    _my->_evaluator_registry.register_evaluator< delegate_coining_shares_evaluator        >();
    _my->_evaluator_registry.register_evaluator< witness_set_properties_evaluator         >();
 
-#ifdef BEARS_ENABLE_SMT
+#ifdef OFFER_ENABLE_SMT
    _my->_evaluator_registry.register_evaluator< smt_setup_evaluator                      >();
    _my->_evaluator_registry.register_evaluator< smt_cap_reveal_evaluator                 >();
    _my->_evaluator_registry.register_evaluator< smt_refund_evaluator                     >();
@@ -2749,7 +2749,7 @@ void database::initialize_indexes()
    add_core_index< coining_delegation_expiration_index     >(*this);
    add_core_index< pending_required_action_index           >(*this);
    add_core_index< pending_optional_action_index           >(*this);
-#ifdef BEARS_ENABLE_SMT
+#ifdef OFFER_ENABLE_SMT
    add_core_index< smt_token_index                         >(*this);
    add_core_index< smt_event_token_index                   >(*this);
    add_core_index< account_regular_balance_index           >(*this);
@@ -2841,54 +2841,54 @@ void database::init_genesis( uint64_t init_supply )
       } inhibitor(*this);
 
       // Create blockchain accounts
-      public_key_type      init_public_key(BEARS_INIT_PUBLIC_KEY);
+      public_key_type      init_public_key(OFFER_INIT_PUBLIC_KEY);
 
       create< account_object >( [&]( account_object& a )
       {
-         a.name = BEARS_MINER_ACCOUNT;
+         a.name = OFFER_MINER_ACCOUNT;
       } );
       create< account_authority_object >( [&]( account_authority_object& auth )
       {
-         auth.account = BEARS_MINER_ACCOUNT;
+         auth.account = OFFER_MINER_ACCOUNT;
          auth.owner.weight_threshold = 1;
          auth.active.weight_threshold = 1;
       });
 
       create< account_object >( [&]( account_object& a )
       {
-         a.name = BEARS_NULL_ACCOUNT;
+         a.name = OFFER_NULL_ACCOUNT;
       } );
       create< account_authority_object >( [&]( account_authority_object& auth )
       {
-         auth.account = BEARS_NULL_ACCOUNT;
+         auth.account = OFFER_NULL_ACCOUNT;
          auth.owner.weight_threshold = 1;
          auth.active.weight_threshold = 1;
       });
 
       create< account_object >( [&]( account_object& a )
       {
-         a.name = BEARS_TEMP_ACCOUNT;
+         a.name = OFFER_TEMP_ACCOUNT;
       } );
       create< account_authority_object >( [&]( account_authority_object& auth )
       {
-         auth.account = BEARS_TEMP_ACCOUNT;
+         auth.account = OFFER_TEMP_ACCOUNT;
          auth.owner.weight_threshold = 0;
          auth.active.weight_threshold = 0;
       });
 
-      for( int i = 0; i < BEARS_NUM_INIT_MINERS; ++i )
+      for( int i = 0; i < OFFER_NUM_INIT_MINERS; ++i )
       {
          create< account_object >( [&]( account_object& a )
          {
-            a.name = BEARS_INIT_MINER_NAME + ( i ? fc::to_string( i ) : std::string() );
+            a.name = OFFER_INIT_MINER_NAME + ( i ? fc::to_string( i ) : std::string() );
             a.memo_key = init_public_key;
-            a.balance  = asset( i ? 0 : init_supply, BEARS_SYMBOL );
+            a.balance  = asset( i ? 0 : init_supply, OFFER_SYMBOL );
             a.bsd_balance = asset( i ? 0 : 10000, BSD_SYMBOL );
          } );
 
          create< account_authority_object >( [&]( account_authority_object& auth )
          {
-            auth.account = BEARS_INIT_MINER_NAME + ( i ? fc::to_string( i ) : std::string() );
+            auth.account = OFFER_INIT_MINER_NAME + ( i ? fc::to_string( i ) : std::string() );
             auth.owner.add_authority( init_public_key, 1 );
             auth.owner.weight_threshold = 1;
             auth.active  = auth.owner;
@@ -2897,7 +2897,7 @@ void database::init_genesis( uint64_t init_supply )
 
          create< witness_object >( [&]( witness_object& w )
          {
-            w.owner        = BEARS_INIT_MINER_NAME + ( i ? fc::to_string(i) : std::string() );
+            w.owner        = OFFER_INIT_MINER_NAME + ( i ? fc::to_string(i) : std::string() );
             w.signing_key  = init_public_key;
             w.schedule = witness_object::miner;
          } );
@@ -2905,17 +2905,17 @@ void database::init_genesis( uint64_t init_supply )
 
       create< dynamic_global_property_object >( [&]( dynamic_global_property_object& p )
       {
-         p.current_witness = BEARS_INIT_MINER_NAME;
-         p.time = BEARS_GENESIS_TIME;
+         p.current_witness = OFFER_INIT_MINER_NAME;
+         p.time = OFFER_GENESIS_TIME;
          p.recent_slots_filled = fc::uint128::max_value();
          p.participation_count = 128;
-         p.current_supply = asset( init_supply, BEARS_SYMBOL );
+         p.current_supply = asset( init_supply, OFFER_SYMBOL );
          p.current_bsd_supply = asset( 10000, BSD_SYMBOL );
          p.virtual_supply = p.current_supply;
-         p.maximum_block_size = BEARS_MAX_BLOCK_SIZE;
-         p.reverse_auction_seconds = BEARS_REVERSE_AUCTION_WINDOW_SECONDS_HF6;
-         p.bsd_stop_percent = BEARS_BSD_STOP_PERCENT_HF14;
-         p.bsd_start_percent = BEARS_BSD_START_PERCENT_HF14;
+         p.maximum_block_size = OFFER_MAX_BLOCK_SIZE;
+         p.reverse_auction_seconds = OFFER_REVERSE_AUCTION_WINDOW_SECONDS_HF6;
+         p.bsd_stop_percent = OFFER_BSD_STOP_PERCENT_HF14;
+         p.bsd_start_percent = OFFER_BSD_START_PERCENT_HF14;
       } );
 
       // Nothing to do
@@ -2924,27 +2924,27 @@ void database::init_genesis( uint64_t init_supply )
          create< block_summary_object >( [&]( block_summary_object& ) {});
       create< hardfork_property_object >( [&](hardfork_property_object& hpo )
       {
-         hpo.processed_hardforks.push_back( BEARS_GENESIS_TIME );
+         hpo.processed_hardforks.push_back( OFFER_GENESIS_TIME );
       } );
 
       // Create witness scheduler
       create< witness_schedule_object >( [&]( witness_schedule_object& wso )
       {
          FC_TODO( "Copied from witness_schedule.cpp, do we want to abstract this to a separate function?" );
-         wso.current_shuffled_witnesses[0] = BEARS_INIT_MINER_NAME;
+         wso.current_shuffled_witnesses[0] = OFFER_INIT_MINER_NAME;
          util::rd_system_params account_subsidy_system_params;
-         account_subsidy_system_params.resource_unit = BEARS_ACCOUNT_SUBSIDY_PRECISION;
-         account_subsidy_system_params.decay_per_time_unit_denom_shift = BEARS_RD_DECAY_DENOM_SHIFT;
+         account_subsidy_system_params.resource_unit = OFFER_ACCOUNT_SUBSIDY_PRECISION;
+         account_subsidy_system_params.decay_per_time_unit_denom_shift = OFFER_RD_DECAY_DENOM_SHIFT;
          util::rd_user_params account_subsidy_user_params;
          account_subsidy_user_params.budget_per_time_unit = wso.median_props.account_subsidy_budget;
          account_subsidy_user_params.decay_per_time_unit = wso.median_props.account_subsidy_decay;
 
          util::rd_user_params account_subsidy_per_witness_user_params;
          int64_t w_budget = wso.median_props.account_subsidy_budget;
-         w_budget = (w_budget * BEARS_WITNESS_SUBSIDY_BUDGET_PERCENT) / BEARS_100_PERCENT;
+         w_budget = (w_budget * OFFER_WITNESS_SUBSIDY_BUDGET_PERCENT) / OFFER_100_PERCENT;
          w_budget = std::min( w_budget, int64_t(std::numeric_limits<int32_t>::max()) );
          uint64_t w_decay = wso.median_props.account_subsidy_decay;
-         w_decay = (w_decay * BEARS_WITNESS_SUBSIDY_DECAY_PERCENT) / BEARS_100_PERCENT;
+         w_decay = (w_decay * OFFER_WITNESS_SUBSIDY_DECAY_PERCENT) / OFFER_100_PERCENT;
          w_decay = std::min( w_decay, uint64_t(std::numeric_limits<uint32_t>::max()) );
 
          account_subsidy_per_witness_user_params.budget_per_time_unit = int32_t(w_budget);
@@ -2974,7 +2974,7 @@ void database::notify_changed_objects()
    {
       /*vector< chainbase::generic_id > ids;
       get_changed_ids( ids );
-      BEARS_TRY_NOTIFY( changed_objects, ids )*/
+      OFFER_TRY_NOTIFY( changed_objects, ids )*/
       /*
       if( _undo_db.enabled() )
       {
@@ -2989,7 +2989,7 @@ void database::notify_changed_objects()
             changed_ids.push_back( item.first );
             removed.emplace_back( item.second.get() );
          }
-         BEARS_TRY_NOTIFY( changed_objects, changed_ids )
+         OFFER_TRY_NOTIFY( changed_objects, changed_ids )
       }
       */
    }
@@ -3060,9 +3060,9 @@ void database::check_free_memory( bool force_print, uint32_t current_block_num )
    uint64_t free_mem = get_free_memory();
    uint64_t max_mem = get_max_memory();
 
-   if( BOOST_UNLIKELY( _shared_file_full_threshold != 0 && _shared_file_scale_rate != 0 && free_mem < ( ( uint128_t( BEARS_100_PERCENT - _shared_file_full_threshold ) * max_mem ) / BEARS_100_PERCENT ).to_uint64() ) )
+   if( BOOST_UNLIKELY( _shared_file_full_threshold != 0 && _shared_file_scale_rate != 0 && free_mem < ( ( uint128_t( OFFER_100_PERCENT - _shared_file_full_threshold ) * max_mem ) / OFFER_100_PERCENT ).to_uint64() ) )
    {
-      uint64_t new_max = ( uint128_t( max_mem * _shared_file_scale_rate ) / BEARS_100_PERCENT ).to_uint64() + max_mem;
+      uint64_t new_max = ( uint128_t( max_mem * _shared_file_scale_rate ) / OFFER_100_PERCENT ).to_uint64() + max_mem;
 
       wlog( "Memory is almost full, increasing to ${mem}M", ("mem", new_max / (1024*1024)) );
 
@@ -3120,7 +3120,7 @@ void database::_apply_block( const signed_block& next_block )
       // This allows the test net to launch with past hardforks and apply the next harfork when running
 
       uint32_t n;
-      for( n=0; n<BEARS_NUM_HARDFORKS; n++ )
+      for( n=0; n<OFFER_NUM_HARDFORKS; n++ )
       {
          if( _hardfork_times[n+1] > next_block.timestamp )
             break;
@@ -3173,15 +3173,15 @@ void database::_apply_block( const signed_block& next_block )
 
    const auto& gprops = get_dynamic_global_properties();
    auto block_size = fc::raw::pack_size( next_block );
-   if( has_hardfork( BEARS_HARDFORK_0_12 ) )
+   if( has_hardfork( OFFER_HARDFORK_0_12 ) )
    {
       FC_ASSERT( block_size <= gprops.maximum_block_size, "Block Size is too Big", ("next_block_num",next_block_num)("block_size", block_size)("max",gprops.maximum_block_size) );
    }
 
-   if( block_size < BEARS_MIN_BLOCK_SIZE )
+   if( block_size < OFFER_MIN_BLOCK_SIZE )
    {
       elog( "Block size is too small",
-         ("next_block_num",next_block_num)("block_size", block_size)("min",BEARS_MIN_BLOCK_SIZE)
+         ("next_block_num",next_block_num)("block_size", block_size)("min",OFFER_MIN_BLOCK_SIZE)
       );
    }
 
@@ -3194,7 +3194,7 @@ void database::_apply_block( const signed_block& next_block )
    /// parse witness version reporting
    process_header_extensions( next_block );
 
-   if( has_hardfork( BEARS_HARDFORK_0_5__54 ) ) // Cannot remove after hardfork
+   if( has_hardfork( OFFER_HARDFORK_0_5__54 ) ) // Cannot remove after hardfork
    {
       const auto& witness = get_witness( next_block.witness );
       const auto& hardfork_state = get_hardfork_property_object();
@@ -3305,12 +3305,12 @@ struct process_header_visitor
 
    void operator()( const required_automated_actions& req_actions ) const
    {
-      FC_ASSERT( _db.has_hardfork( BEARS_SMT_HARDFORK ), "Automated actions are not enabled until SMT hardfork." );
+      FC_ASSERT( _db.has_hardfork( OFFER_SMT_HARDFORK ), "Automated actions are not enabled until SMT hardfork." );
    }
 
    void operator()( const optional_automated_actions& opt_actions ) const
    {
-      FC_ASSERT( _db.has_hardfork( BEARS_SMT_HARDFORK ), "Automated actions are not enabled until SMT hardfork." );
+      FC_ASSERT( _db.has_hardfork( OFFER_SMT_HARDFORK ), "Automated actions are not enabled until SMT hardfork." );
    }
 };
 
@@ -3324,7 +3324,7 @@ void database::process_header_extensions( const signed_block& next_block )
 
 void database::update_median_feed() {
 try {
-   if( (head_block_num() % BEARS_FEED_INTERVAL_BLOCKS) != 0 )
+   if( (head_block_num() % OFFER_FEED_INTERVAL_BLOCKS) != 0 )
       return;
 
    auto now = head_block_time();
@@ -3333,22 +3333,22 @@ try {
    for( int i = 0; i < wso.num_scheduled_witnesses; i++ )
    {
       const auto& wit = get_witness( wso.current_shuffled_witnesses[i] );
-      if( has_hardfork( BEARS_HARDFORK_0_19__822 ) )
+      if( has_hardfork( OFFER_HARDFORK_0_19__822 ) )
       {
-         if( now < wit.last_bsd_exchange_update + BEARS_MAX_FEED_AGE_SECONDS
+         if( now < wit.last_bsd_exchange_update + OFFER_MAX_FEED_AGE_SECONDS
             && !wit.bsd_exchange_rate.is_null() )
          {
             feeds.push_back( wit.bsd_exchange_rate );
          }
       }
-      else if( wit.last_bsd_exchange_update < now + BEARS_MAX_FEED_AGE_SECONDS &&
+      else if( wit.last_bsd_exchange_update < now + OFFER_MAX_FEED_AGE_SECONDS &&
           !wit.bsd_exchange_rate.is_null() )
       {
          feeds.push_back( wit.bsd_exchange_rate );
       }
    }
 
-   if( feeds.size() >= BEARS_MIN_FEEDS )
+   if( feeds.size() >= OFFER_MIN_FEEDS )
    {
       std::sort( feeds.begin(), feeds.end() );
       auto median_feed = feeds[feeds.size()/2];
@@ -3356,11 +3356,11 @@ try {
       modify( get_feed_history(), [&]( feed_history_object& fho )
       {
          fho.price_history.push_back( median_feed );
-         size_t bears_feed_history_window = BEARS_FEED_HISTORY_WINDOW_PRE_HF_16;
-         if( has_hardfork( BEARS_HARDFORK_0_16__551) )
-            bears_feed_history_window = BEARS_FEED_HISTORY_WINDOW;
+         size_t offer_feed_history_window = OFFER_FEED_HISTORY_WINDOW_PRE_HF_16;
+         if( has_hardfork( OFFER_HARDFORK_0_16__551) )
+            offer_feed_history_window = OFFER_FEED_HISTORY_WINDOW;
 
-         if( fho.price_history.size() > bears_feed_history_window )
+         if( fho.price_history.size() > offer_feed_history_window )
             fho.price_history.pop_front();
 
          if( fho.price_history.size() )
@@ -3379,13 +3379,13 @@ try {
             if( skip_price_feed_limit_check )
                return;
 #endif
-            if( has_hardfork( BEARS_HARDFORK_0_14__230 ) )
+            if( has_hardfork( OFFER_HARDFORK_0_14__230 ) )
             {
                // This block limits the effective median price to force BSD to remain at or
-               // below 10% of the combined market cap of BEARS and BSD.
+               // below 10% of the combined market cap of OFFER and BSD.
                //
-               // For example, if we have 500 BEARS and 100 BSD, the price is limited to
-               // 900 BSD / 500 BEARS which works out to be $1.80.  At this price, 500 Bears
+               // For example, if we have 500 OFFER and 100 BSD, the price is limited to
+               // 900 BSD / 500 OFFER which works out to be $1.80.  At this price, 500 Offer
                // would be valued at 500 * $1.80 = $900.  100 BSD is by definition always $100,
                // so the combined market cap is $900 + $100 = $1000.
 
@@ -3432,10 +3432,10 @@ void database::_apply_transaction(const signed_transaction& trx)
 
       try
       {
-         trx.verify_authority( chain_id, get_active, get_owner, get_posting, BEARS_MAX_SIG_CHECK_DEPTH,
-            has_hardfork( BEARS_HARDFORK_0_20 ) || is_producing() ? BEARS_MAX_AUTHORITY_MEMBERSHIP : 0,
-            has_hardfork( BEARS_HARDFORK_0_20 ) || is_producing() ? BEARS_MAX_SIG_CHECK_ACCOUNTS : 0,
-            has_hardfork( BEARS_HARDFORK_0_20__1944 ) ? fc::ecc::bip_0062 : fc::ecc::fc_canonical );
+         trx.verify_authority( chain_id, get_active, get_owner, get_posting, OFFER_MAX_SIG_CHECK_DEPTH,
+            has_hardfork( OFFER_HARDFORK_0_20 ) || is_producing() ? OFFER_MAX_AUTHORITY_MEMBERSHIP : 0,
+            has_hardfork( OFFER_HARDFORK_0_20 ) || is_producing() ? OFFER_MAX_SIG_CHECK_ACCOUNTS : 0,
+            has_hardfork( OFFER_HARDFORK_0_20__1944 ) ? fc::ecc::bip_0062 : fc::ecc::fc_canonical );
       }
       catch( protocol::tx_missing_active_auth& e )
       {
@@ -3452,18 +3452,18 @@ void database::_apply_transaction(const signed_transaction& trx)
       {
          const auto& tapos_block_summary = get< block_summary_object >( trx.ref_block_num );
          //Verify TaPoS block summary has correct ID prefix, and that this block's time is not past the expiration
-         BEARS_ASSERT( trx.ref_block_prefix == tapos_block_summary.block_id._hash[1], transaction_tapos_exception,
+         OFFER_ASSERT( trx.ref_block_prefix == tapos_block_summary.block_id._hash[1], transaction_tapos_exception,
                     "", ("trx.ref_block_prefix", trx.ref_block_prefix)
                     ("tapos_block_summary",tapos_block_summary.block_id._hash[1]));
       }
 
       fc::time_point_sec now = head_block_time();
 
-      BEARS_ASSERT( trx.expiration <= now + fc::seconds(BEARS_MAX_TIME_UNTIL_EXPIRATION), transaction_expiration_exception,
-                  "", ("trx.expiration",trx.expiration)("now",now)("max_til_exp",BEARS_MAX_TIME_UNTIL_EXPIRATION));
-      if( has_hardfork( BEARS_HARDFORK_0_9 ) ) // Simple solution to pending trx bug when now == trx.expiration
-         BEARS_ASSERT( now < trx.expiration, transaction_expiration_exception, "", ("now",now)("trx.exp",trx.expiration) );
-      BEARS_ASSERT( now <= trx.expiration, transaction_expiration_exception, "", ("now",now)("trx.exp",trx.expiration) );
+      OFFER_ASSERT( trx.expiration <= now + fc::seconds(OFFER_MAX_TIME_UNTIL_EXPIRATION), transaction_expiration_exception,
+                  "", ("trx.expiration",trx.expiration)("now",now)("max_til_exp",OFFER_MAX_TIME_UNTIL_EXPIRATION));
+      if( has_hardfork( OFFER_HARDFORK_0_9 ) ) // Simple solution to pending trx bug when now == trx.expiration
+         OFFER_ASSERT( now < trx.expiration, transaction_expiration_exception, "", ("now",now)("trx.exp",trx.expiration) );
+      OFFER_ASSERT( now <= trx.expiration, transaction_expiration_exception, "", ("now",now)("trx.exp",trx.expiration) );
    }
 
    //Insert transaction into unique transactions database.
@@ -3674,7 +3674,7 @@ const witness_object& database::validate_block_header( uint32_t skip, const sign
 
    if( !(skip&skip_witness_signature) )
       FC_ASSERT( next_block.validate_signee( witness.signing_key,
-         has_hardfork( BEARS_HARDFORK_0_20__1944 ) ? fc::ecc::bip_0062 : fc::ecc::fc_canonical ) );
+         has_hardfork( OFFER_HARDFORK_0_20__1944 ) ? fc::ecc::bip_0062 : fc::ecc::fc_canonical ) );
 
    if( !(skip&skip_witness_schedule_check) )
    {
@@ -3719,9 +3719,9 @@ void database::update_global_dynamic_data( const signed_block& b )
                w.total_missed++;
                FC_TODO( "#ifndef not needed after HF 20 is live" );
 
-               if( has_hardfork( BEARS_HARDFORK_0_14__278 ) && !has_hardfork( BEARS_HARDFORK_0_20__SP190 ) )
+               if( has_hardfork( OFFER_HARDFORK_0_14__278 ) && !has_hardfork( OFFER_HARDFORK_0_20__SP190 ) )
                {
-                  if( head_block_num() - w.last_confirmed_block_num  > BEARS_BLOCKS_PER_DAY )
+                  if( head_block_num() - w.last_confirmed_block_num  > OFFER_BLOCKS_PER_DAY )
                   {
                      w.signing_key = public_key_type();
                      push_virtual_operation( shutdown_witness_operation( w.owner ) );
@@ -3754,11 +3754,11 @@ void database::update_global_dynamic_data( const signed_block& b )
 
    if( !(get_node_properties().skip_flags & skip_undo_history_check) )
    {
-      BEARS_ASSERT( _dgp.head_block_number - _dgp.last_irreversible_block_num  < BEARS_MAX_UNDO_HISTORY, undo_database_exception,
+      OFFER_ASSERT( _dgp.head_block_number - _dgp.last_irreversible_block_num  < OFFER_MAX_UNDO_HISTORY, undo_database_exception,
                  "The database does not have enough undo history to support a blockchain with so many missed blocks. "
                  "Please add a checkpoint if you would like to continue applying blocks beyond this point.",
                  ("last_irreversible_block_num",_dgp.last_irreversible_block_num)("head", _dgp.head_block_number)
-                 ("max_undo",BEARS_MAX_UNDO_HISTORY) );
+                 ("max_undo",OFFER_MAX_UNDO_HISTORY) );
    }
 } FC_CAPTURE_AND_RETHROW() }
 
@@ -3767,21 +3767,21 @@ void database::update_virtual_supply()
    modify( get_dynamic_global_properties(), [&]( dynamic_global_property_object& dgp )
    {
       dgp.virtual_supply = dgp.current_supply
-         + ( get_feed_history().current_median_history.is_null() ? asset( 0, BEARS_SYMBOL ) : dgp.current_bsd_supply * get_feed_history().current_median_history );
+         + ( get_feed_history().current_median_history.is_null() ? asset( 0, OFFER_SYMBOL ) : dgp.current_bsd_supply * get_feed_history().current_median_history );
 
       auto median_price = get_feed_history().current_median_history;
 
-      if( !median_price.is_null() && has_hardfork( BEARS_HARDFORK_0_14__230 ) )
+      if( !median_price.is_null() && has_hardfork( OFFER_HARDFORK_0_14__230 ) )
       {
-         auto percent_bsd = uint16_t( ( ( fc::uint128_t( ( dgp.current_bsd_supply * get_feed_history().current_median_history ).amount.value ) * BEARS_100_PERCENT )
+         auto percent_bsd = uint16_t( ( ( fc::uint128_t( ( dgp.current_bsd_supply * get_feed_history().current_median_history ).amount.value ) * OFFER_100_PERCENT )
             / dgp.virtual_supply.amount.value ).to_uint64() );
 
          if( percent_bsd <= dgp.bsd_start_percent )
-            dgp.bsd_print_rate = BEARS_100_PERCENT;
+            dgp.bsd_print_rate = OFFER_100_PERCENT;
          else if( percent_bsd >= dgp.bsd_stop_percent )
             dgp.bsd_print_rate = 0;
          else
-            dgp.bsd_print_rate = ( ( dgp.bsd_stop_percent - percent_bsd ) * BEARS_100_PERCENT ) / ( dgp.bsd_stop_percent - dgp.bsd_start_percent );
+            dgp.bsd_print_rate = ( ( dgp.bsd_stop_percent - percent_bsd ) * OFFER_100_PERCENT ) / ( dgp.bsd_stop_percent - dgp.bsd_start_percent );
       }
    });
 } FC_CAPTURE_AND_RETHROW() }
@@ -3807,12 +3807,12 @@ void database::update_last_irreversible_block()
     * Prior to voting taking over, we must be more conservative...
     *
     */
-   if( head_block_num() < BEARS_START_MINER_VOTING_BLOCK )
+   if( head_block_num() < OFFER_START_MINER_VOTING_BLOCK )
    {
       modify( dpo, [&]( dynamic_global_property_object& _dpo )
       {
-         if ( head_block_num() > BEARS_MAX_WITNESSES )
-            _dpo.last_irreversible_block_num = head_block_num() - BEARS_MAX_WITNESSES;
+         if ( head_block_num() > OFFER_MAX_WITNESSES )
+            _dpo.last_irreversible_block_num = head_block_num() - OFFER_MAX_WITNESSES;
       } );
    }
    else
@@ -3824,13 +3824,13 @@ void database::update_last_irreversible_block()
       for( int i = 0; i < wso.num_scheduled_witnesses; i++ )
          wit_objs.push_back( &get_witness( wso.current_shuffled_witnesses[i] ) );
 
-      static_assert( BEARS_IRREVERSIBLE_THRESHOLD > 0, "irreversible threshold must be nonzero" );
+      static_assert( OFFER_IRREVERSIBLE_THRESHOLD > 0, "irreversible threshold must be nonzero" );
 
       // 1 1 1 2 2 2 2 2 2 2 -> 2     .7*10 = 7
       // 1 1 1 1 1 1 1 2 2 2 -> 1
       // 3 3 3 3 3 3 3 3 3 3 -> 3
 
-      size_t offset = ((BEARS_100_PERCENT - BEARS_IRREVERSIBLE_THRESHOLD) * wit_objs.size() / BEARS_100_PERCENT);
+      size_t offset = ((OFFER_100_PERCENT - OFFER_IRREVERSIBLE_THRESHOLD) * wit_objs.size() / OFFER_100_PERCENT);
 
       std::nth_element( wit_objs.begin(), wit_objs.begin() + offset, wit_objs.end(),
          []( const witness_object* a, const witness_object* b )
@@ -3935,24 +3935,24 @@ bool database::apply_order( const limit_order_object& new_order_object )
 
 int database::match( const limit_order_object& new_order, const limit_order_object& old_order, const price& match_price )
 {
-   bool has_hf_20__1815 = has_hardfork( BEARS_HARDFORK_0_20__1815 );
+   bool has_hf_20__1815 = has_hardfork( OFFER_HARDFORK_0_20__1815 );
 
 #pragma message( "TODO:  Remove if(), do assert unconditionally after HF20 occurs" )
    if( has_hf_20__1815 )
    {
-      BEARS_ASSERT( new_order.sell_price.quote.symbol == old_order.sell_price.base.symbol,
+      OFFER_ASSERT( new_order.sell_price.quote.symbol == old_order.sell_price.base.symbol,
          order_match_exception, "error matching orders: ${new_order} ${old_order} ${match_price}",
          ("new_order", new_order)("old_order", old_order)("match_price", match_price) );
-      BEARS_ASSERT( new_order.sell_price.base.symbol  == old_order.sell_price.quote.symbol,
+      OFFER_ASSERT( new_order.sell_price.base.symbol  == old_order.sell_price.quote.symbol,
          order_match_exception, "error matching orders: ${new_order} ${old_order} ${match_price}",
          ("new_order", new_order)("old_order", old_order)("match_price", match_price) );
-      BEARS_ASSERT( new_order.for_sale > 0 && old_order.for_sale > 0,
+      OFFER_ASSERT( new_order.for_sale > 0 && old_order.for_sale > 0,
          order_match_exception, "error matching orders: ${new_order} ${old_order} ${match_price}",
          ("new_order", new_order)("old_order", old_order)("match_price", match_price) );
-      BEARS_ASSERT( match_price.quote.symbol == new_order.sell_price.base.symbol,
+      OFFER_ASSERT( match_price.quote.symbol == new_order.sell_price.base.symbol,
          order_match_exception, "error matching orders: ${new_order} ${old_order} ${match_price}",
          ("new_order", new_order)("old_order", old_order)("match_price", match_price) );
-      BEARS_ASSERT( match_price.base.symbol == old_order.sell_price.base.symbol,
+      OFFER_ASSERT( match_price.base.symbol == old_order.sell_price.base.symbol,
          order_match_exception, "error matching orders: ${new_order} ${old_order} ${match_price}",
          ("new_order", new_order)("old_order", old_order)("match_price", match_price) );
    }
@@ -3983,18 +3983,18 @@ int database::match( const limit_order_object& new_order, const limit_order_obje
 #pragma message( "TODO:  Remove if(), do assert unconditionally after HF20 occurs" )
    if( has_hf_20__1815 )
    {
-      BEARS_ASSERT( new_order_pays == new_order.amount_for_sale() ||
+      OFFER_ASSERT( new_order_pays == new_order.amount_for_sale() ||
                     old_order_pays == old_order.amount_for_sale(),
          order_match_exception, "error matching orders: ${new_order} ${old_order} ${match_price}",
          ("new_order", new_order)("old_order", old_order)("match_price", match_price) );
    }
 
    auto age = head_block_time() - old_order.created;
-   if( !has_hardfork( BEARS_HARDFORK_0_12__178 ) &&
-       ( (age >= BEARS_MIN_LIQUIDITY_REWARD_PERIOD_SEC && !has_hardfork( BEARS_HARDFORK_0_10__149)) ||
-       (age >= BEARS_MIN_LIQUIDITY_REWARD_PERIOD_SEC_HF10 && has_hardfork( BEARS_HARDFORK_0_10__149) ) ) )
+   if( !has_hardfork( OFFER_HARDFORK_0_12__178 ) &&
+       ( (age >= OFFER_MIN_LIQUIDITY_REWARD_PERIOD_SEC && !has_hardfork( OFFER_HARDFORK_0_10__149)) ||
+       (age >= OFFER_MIN_LIQUIDITY_REWARD_PERIOD_SEC_HF10 && has_hardfork( OFFER_HARDFORK_0_10__149) ) ) )
    {
-      if( old_order_receives.symbol == BEARS_SYMBOL )
+      if( old_order_receives.symbol == OFFER_SYMBOL )
       {
          adjust_liquidity_reward( get_account( old_order.seller ), old_order_receives, false );
          adjust_liquidity_reward( get_account( new_order.seller ), -old_order_receives, false );
@@ -4015,7 +4015,7 @@ int database::match( const limit_order_object& new_order, const limit_order_obje
 #pragma message( "TODO:  Remove if(), do assert unconditionally after HF20 occurs" )
    if( has_hf_20__1815 )
    {
-      BEARS_ASSERT( result != 0,
+      OFFER_ASSERT( result != 0,
          order_match_exception, "error matching orders: ${new_order} ${old_order} ${match_price}",
          ("new_order", new_order)("old_order", old_order)("match_price", match_price) );
    }
@@ -4031,19 +4031,19 @@ void database::adjust_liquidity_reward( const account_object& owner, const asset
    {
       modify<liquidity_reward_balance_object>( *itr, [&]( liquidity_reward_balance_object& r )
       {
-         if( head_block_time() - r.last_update >= BEARS_LIQUIDITY_TIMEOUT_SEC )
+         if( head_block_time() - r.last_update >= OFFER_LIQUIDITY_TIMEOUT_SEC )
          {
             r.bsd_volume = 0;
-            r.bears_volume = 0;
+            r.offer_volume = 0;
             r.weight = 0;
          }
 
          if( is_sdb )
             r.bsd_volume += volume.amount.value;
          else
-            r.bears_volume += volume.amount.value;
+            r.offer_volume += volume.amount.value;
 
-         r.update_weight( has_hardfork( BEARS_HARDFORK_0_10__141 ) );
+         r.update_weight( has_hardfork( OFFER_HARDFORK_0_10__141 ) );
          r.last_update = head_block_time();
       } );
    }
@@ -4055,9 +4055,9 @@ void database::adjust_liquidity_reward( const account_object& owner, const asset
          if( is_sdb )
             r.bsd_volume = volume.amount.value;
          else
-            r.bears_volume = volume.amount.value;
+            r.offer_volume = volume.amount.value;
 
-         r.update_weight( has_hardfork( BEARS_HARDFORK_0_9__141 ) );
+         r.update_weight( has_hardfork( OFFER_HARDFORK_0_9__141 ) );
          r.last_update = head_block_time();
       } );
    }
@@ -4068,10 +4068,10 @@ bool database::fill_order( const limit_order_object& order, const asset& pays, c
 {
    try
    {
-      BEARS_ASSERT( order.amount_for_sale().symbol == pays.symbol,
+      OFFER_ASSERT( order.amount_for_sale().symbol == pays.symbol,
          order_fill_exception, "error filling orders: ${order} ${pays} ${receives}",
          ("order", order)("pays", pays)("receives", receives) );
-      BEARS_ASSERT( pays.symbol != receives.symbol,
+      OFFER_ASSERT( pays.symbol != receives.symbol,
          order_fill_exception, "error filling orders: ${order} ${pays} ${receives}",
          ("order", order)("pays", pays)("receives", receives) );
 
@@ -4085,9 +4085,9 @@ bool database::fill_order( const limit_order_object& order, const asset& pays, c
       else
       {
 #pragma message( "TODO:  Remove if(), do assert unconditionally after HF20 occurs" )
-         if( has_hardfork( BEARS_HARDFORK_0_20__1815 ) )
+         if( has_hardfork( OFFER_HARDFORK_0_20__1815 ) )
          {
-            BEARS_ASSERT( pays < order.amount_for_sale(),
+            OFFER_ASSERT( pays < order.amount_for_sale(),
               order_fill_exception, "error filling orders: ${order} ${pays} ${receives}",
               ("order", order)("pays", pays)("receives", receives) );
          }
@@ -4154,9 +4154,9 @@ void database::clear_expired_delegations()
 
       modify( get_account( itr->delegator ), [&]( account_object& a )
       {
-         if( has_hardfork( BEARS_HARDFORK_0_20__2539 ) )
+         if( has_hardfork( OFFER_HARDFORK_0_20__2539 ) )
          {
-            util::manabar_params params( util::get_effective_coining_shares( a ), BEARS_VOTING_MANA_REGENERATION_SECONDS );
+            util::manabar_params params( util::get_effective_coining_shares( a ), OFFER_VOTING_MANA_REGENERATION_SECONDS );
 FC_TODO( "Set skip_cap_regen=true without breaking consensus" );
             a.voting_manabar.regenerate_mana( params, head_block_time() );
             a.voting_manabar.use_mana( -itr->coining_shares.amount.value );
@@ -4171,7 +4171,7 @@ FC_TODO( "Set skip_cap_regen=true without breaking consensus" );
       itr = delegations_by_exp.begin();
    }
 }
-#ifdef BEARS_ENABLE_SMT
+#ifdef OFFER_ENABLE_SMT
 template< typename smt_balance_object_type, class balance_operator_type >
 void database::adjust_smt_balance( const account_name_type& name, const asset& delta, bool check_account,
    balance_operator_type balance_operator )
@@ -4229,25 +4229,25 @@ void database::modify_balance( const account_object& a, const asset& delta, bool
    {
       switch( delta.symbol.asset_num )
       {
-         case BEARS_ASSET_NUM_BEARS:
+         case OFFER_ASSET_NUM_OFFER:
             acnt.balance += delta;
             if( check_balance )
             {
-               FC_ASSERT( acnt.balance.amount.value >= 0, "Insufficient BEARS funds" );
+               FC_ASSERT( acnt.balance.amount.value >= 0, "Insufficient OFFER funds" );
             }
             break;
-         case BEARS_ASSET_NUM_BSD:
+         case OFFER_ASSET_NUM_BSD:
             if( a.bsd_seconds_last_update != head_block_time() )
             {
                acnt.bsd_seconds += fc::uint128_t(a.bsd_balance.amount.value) * (head_block_time() - a.bsd_seconds_last_update).to_seconds();
                acnt.bsd_seconds_last_update = head_block_time();
 
                if( acnt.bsd_seconds > 0 &&
-                   (acnt.bsd_seconds_last_update - acnt.bsd_last_interest_payment).to_seconds() > BEARS_BSD_INTEREST_COMPOUND_INTERVAL_SEC )
+                   (acnt.bsd_seconds_last_update - acnt.bsd_last_interest_payment).to_seconds() > OFFER_BSD_INTEREST_COMPOUND_INTERVAL_SEC )
                {
-                  auto interest = acnt.bsd_seconds / BEARS_SECONDS_PER_YEAR;
+                  auto interest = acnt.bsd_seconds / OFFER_SECONDS_PER_YEAR;
                   interest *= get_dynamic_global_properties().bsd_interest_rate;
-                  interest /= BEARS_100_PERCENT;
+                  interest /= OFFER_100_PERCENT;
                   asset interest_paid(interest.to_uint64(), BSD_SYMBOL);
                   acnt.bsd_balance += interest_paid;
                   acnt.bsd_seconds = 0;
@@ -4269,7 +4269,7 @@ void database::modify_balance( const account_object& a, const asset& delta, bool
                FC_ASSERT( acnt.bsd_balance.amount.value >= 0, "Insufficient BSD funds" );
             }
             break;
-         case BEARS_ASSET_NUM_COINS:
+         case OFFER_ASSET_NUM_COINS:
             acnt.coining_shares += delta;
             if( check_balance )
             {
@@ -4288,18 +4288,18 @@ void database::modify_reward_balance( const account_object& a, const asset& valu
    {
       switch( value_delta.symbol.asset_num )
       {
-         case BEARS_ASSET_NUM_BEARS:
+         case OFFER_ASSET_NUM_OFFER:
             if( share_delta.amount.value == 0 )
             {
-               acnt.reward_bears_balance += value_delta;
+               acnt.reward_offer_balance += value_delta;
                if( check_balance )
                {
-                  FC_ASSERT( acnt.reward_bears_balance.amount.value >= 0, "Insufficient reward BEARS funds" );
+                  FC_ASSERT( acnt.reward_offer_balance.amount.value >= 0, "Insufficient reward OFFER funds" );
                }
             }
             else
             {
-               acnt.reward_coining_bears += value_delta;
+               acnt.reward_coining_offer += value_delta;
                acnt.reward_coining_balance += share_delta;
                if( check_balance )
                {
@@ -4307,7 +4307,7 @@ void database::modify_reward_balance( const account_object& a, const asset& valu
                }
             }
             break;
-         case BEARS_ASSET_NUM_BSD:
+         case OFFER_ASSET_NUM_BSD:
             FC_ASSERT( share_delta.amount.value == 0 );
             acnt.reward_bsd_balance += value_delta;
             if( check_balance )
@@ -4321,7 +4321,7 @@ void database::modify_reward_balance( const account_object& a, const asset& valu
    });
 }
 
-#ifdef BEARS_ENABLE_SMT
+#ifdef OFFER_ENABLE_SMT
 struct smt_regular_balance_operator
 {
    smt_regular_balance_operator( const asset& delta ) : delta(delta), is_coining(delta.symbol.is_coining()) {}
@@ -4378,9 +4378,9 @@ struct smt_reward_balance_operator
 
 void database::adjust_balance( const account_object& a, const asset& delta )
 {
-   bool check_balance = has_hardfork( BEARS_HARDFORK_0_20__1811 );
+   bool check_balance = has_hardfork( OFFER_HARDFORK_0_20__1811 );
 
-#ifdef BEARS_ENABLE_SMT
+#ifdef OFFER_ENABLE_SMT
    // No account object modification for SMT balance, hence separate handling here.
    // Note that SMT related code, being post-20-hf needs no hf-guard to do balance checks.
    if( delta.symbol.space() == asset_symbol_type::smt_nai_space )
@@ -4395,9 +4395,9 @@ void database::adjust_balance( const account_object& a, const asset& delta )
 
 void database::adjust_balance( const account_name_type& name, const asset& delta )
 {
-   bool check_balance = has_hardfork( BEARS_HARDFORK_0_20__1811 );
+   bool check_balance = has_hardfork( OFFER_HARDFORK_0_20__1811 );
 
-#ifdef BEARS_ENABLE_SMT
+#ifdef OFFER_ENABLE_SMT
    // No account object modification for SMT balance, hence separate handling here.
    // Note that SMT related code, being post-20-hf needs no hf-guard to do balance checks.
    if( delta.symbol.space() == asset_symbol_type::smt_nai_space )
@@ -4413,31 +4413,31 @@ void database::adjust_balance( const account_name_type& name, const asset& delta
 
 void database::adjust_savings_balance( const account_object& a, const asset& delta )
 {
-   bool check_balance = has_hardfork( BEARS_HARDFORK_0_20__1811 );
+   bool check_balance = has_hardfork( OFFER_HARDFORK_0_20__1811 );
 
    modify( a, [&]( account_object& acnt )
    {
       switch( delta.symbol.asset_num )
       {
-         case BEARS_ASSET_NUM_BEARS:
+         case OFFER_ASSET_NUM_OFFER:
             acnt.savings_balance += delta;
             if( check_balance )
             {
-               FC_ASSERT( acnt.savings_balance.amount.value >= 0, "Insufficient savings BEARS funds" );
+               FC_ASSERT( acnt.savings_balance.amount.value >= 0, "Insufficient savings OFFER funds" );
             }
             break;
-         case BEARS_ASSET_NUM_BSD:
+         case OFFER_ASSET_NUM_BSD:
             if( a.savings_bsd_seconds_last_update != head_block_time() )
             {
                acnt.savings_bsd_seconds += fc::uint128_t(a.savings_bsd_balance.amount.value) * (head_block_time() - a.savings_bsd_seconds_last_update).to_seconds();
                acnt.savings_bsd_seconds_last_update = head_block_time();
 
                if( acnt.savings_bsd_seconds > 0 &&
-                   (acnt.savings_bsd_seconds_last_update - acnt.savings_bsd_last_interest_payment).to_seconds() > BEARS_BSD_INTEREST_COMPOUND_INTERVAL_SEC )
+                   (acnt.savings_bsd_seconds_last_update - acnt.savings_bsd_last_interest_payment).to_seconds() > OFFER_BSD_INTEREST_COMPOUND_INTERVAL_SEC )
                {
-                  auto interest = acnt.savings_bsd_seconds / BEARS_SECONDS_PER_YEAR;
+                  auto interest = acnt.savings_bsd_seconds / OFFER_SECONDS_PER_YEAR;
                   interest *= get_dynamic_global_properties().bsd_interest_rate;
-                  interest /= BEARS_100_PERCENT;
+                  interest /= OFFER_100_PERCENT;
                   asset interest_paid(interest.to_uint64(), BSD_SYMBOL);
                   acnt.savings_bsd_balance += interest_paid;
                   acnt.savings_bsd_seconds = 0;
@@ -4468,10 +4468,10 @@ void database::adjust_savings_balance( const account_object& a, const asset& del
 void database::adjust_reward_balance( const account_object& a, const asset& value_delta,
                                       const asset& share_delta /*= asset(0,COINS_SYMBOL)*/ )
 {
-   bool check_balance = has_hardfork( BEARS_HARDFORK_0_20__1811 );
+   bool check_balance = has_hardfork( OFFER_HARDFORK_0_20__1811 );
    FC_ASSERT( value_delta.symbol.is_coining() == false && share_delta.symbol.is_coining() );
 
-#ifdef BEARS_ENABLE_SMT
+#ifdef OFFER_ENABLE_SMT
    // No account object modification for SMT balance, hence separate handling here.
    // Note that SMT related code, being post-20-hf needs no hf-guard to do balance checks.
    if( value_delta.symbol.space() == asset_symbol_type::smt_nai_space )
@@ -4488,10 +4488,10 @@ void database::adjust_reward_balance( const account_object& a, const asset& valu
 void database::adjust_reward_balance( const account_name_type& name, const asset& value_delta,
                                       const asset& share_delta /*= asset(0,COINS_SYMBOL)*/ )
 {
-   bool check_balance = has_hardfork( BEARS_HARDFORK_0_20__1811 );
+   bool check_balance = has_hardfork( OFFER_HARDFORK_0_20__1811 );
    FC_ASSERT( value_delta.symbol.is_coining() == false && share_delta.symbol.is_coining() );
 
-#ifdef BEARS_ENABLE_SMT
+#ifdef OFFER_ENABLE_SMT
    // No account object modification for SMT balance, hence separate handling here.
    // Note that SMT related code, being post-20-hf needs no hf-guard to do balance checks.
    if( value_delta.symbol.space() == asset_symbol_type::smt_nai_space )
@@ -4508,7 +4508,7 @@ void database::adjust_reward_balance( const account_name_type& name, const asset
 
 void database::adjust_supply( const asset& delta, bool adjust_coining )
 {
-#ifdef BEARS_ENABLE_SMT
+#ifdef OFFER_ENABLE_SMT
    if( delta.symbol.space() == asset_symbol_type::smt_nai_space )
    {
       const auto& smt = get< smt_token_object, by_symbol >( delta.symbol );
@@ -4522,29 +4522,29 @@ void database::adjust_supply( const asset& delta, bool adjust_coining )
    }
 #endif
 
-   bool check_supply = has_hardfork( BEARS_HARDFORK_0_20__1811 );
+   bool check_supply = has_hardfork( OFFER_HARDFORK_0_20__1811 );
 
    const auto& props = get_dynamic_global_properties();
-   if( props.head_block_number < BEARS_BLOCKS_PER_DAY*7 )
+   if( props.head_block_number < OFFER_BLOCKS_PER_DAY*7 )
       adjust_coining = false;
 
    modify( props, [&]( dynamic_global_property_object& props )
    {
       switch( delta.symbol.asset_num )
       {
-         case BEARS_ASSET_NUM_BEARS:
+         case OFFER_ASSET_NUM_OFFER:
          {
-            asset new_coining( (adjust_coining && delta.amount > 0) ? delta.amount * 9 : 0, BEARS_SYMBOL );
+            asset new_coining( (adjust_coining && delta.amount > 0) ? delta.amount * 9 : 0, OFFER_SYMBOL );
             props.current_supply += delta + new_coining;
             props.virtual_supply += delta + new_coining;
-            props.total_coining_fund_bears += new_coining;
+            props.total_coining_fund_offer += new_coining;
             if( check_supply )
             {
                FC_ASSERT( props.current_supply.amount.value >= 0 );
             }
             break;
          }
-         case BEARS_ASSET_NUM_BSD:
+         case OFFER_ASSET_NUM_BSD:
             props.current_bsd_supply += delta;
             props.virtual_supply = props.current_bsd_supply * get_feed_history().current_median_history + props.current_supply;
             if( check_supply )
@@ -4563,13 +4563,13 @@ asset database::get_balance( const account_object& a, asset_symbol_type symbol )
 {
    switch( symbol.asset_num )
    {
-      case BEARS_ASSET_NUM_BEARS:
+      case OFFER_ASSET_NUM_OFFER:
          return a.balance;
-      case BEARS_ASSET_NUM_BSD:
+      case OFFER_ASSET_NUM_BSD:
          return a.bsd_balance;
       default:
       {
-#ifdef BEARS_ENABLE_SMT
+#ifdef OFFER_ENABLE_SMT
          FC_ASSERT( symbol.space() == asset_symbol_type::smt_nai_space, "invalid symbol" );
          const account_regular_balance_object* arbo =
             find< account_regular_balance_object, by_owner_liquid_symbol >(
@@ -4593,9 +4593,9 @@ asset database::get_savings_balance( const account_object& a, asset_symbol_type 
 {
    switch( symbol.asset_num )
    {
-      case BEARS_ASSET_NUM_BEARS:
+      case OFFER_ASSET_NUM_OFFER:
          return a.savings_balance;
-      case BEARS_ASSET_NUM_BSD:
+      case OFFER_ASSET_NUM_BSD:
          return a.savings_bsd_balance;
       default: // Note no savings balance for SMT per comments in issue 1682.
          FC_ASSERT( !"invalid symbol" );
@@ -4604,81 +4604,81 @@ asset database::get_savings_balance( const account_object& a, asset_symbol_type 
 
 void database::init_hardforks()
 {
-   _hardfork_times[ 0 ] = fc::time_point_sec( BEARS_GENESIS_TIME );
+   _hardfork_times[ 0 ] = fc::time_point_sec( OFFER_GENESIS_TIME );
    _hardfork_versions[ 0 ] = hardfork_version( 0, 0 );
-   FC_ASSERT( BEARS_HARDFORK_0_1 == 1, "Invalid hardfork configuration" );
-   _hardfork_times[ BEARS_HARDFORK_0_1 ] = fc::time_point_sec( BEARS_HARDFORK_0_1_TIME );
-   _hardfork_versions[ BEARS_HARDFORK_0_1 ] = BEARS_HARDFORK_0_1_VERSION;
-   FC_ASSERT( BEARS_HARDFORK_0_2 == 2, "Invlaid hardfork configuration" );
-   _hardfork_times[ BEARS_HARDFORK_0_2 ] = fc::time_point_sec( BEARS_HARDFORK_0_2_TIME );
-   _hardfork_versions[ BEARS_HARDFORK_0_2 ] = BEARS_HARDFORK_0_2_VERSION;
-   FC_ASSERT( BEARS_HARDFORK_0_3 == 3, "Invalid hardfork configuration" );
-   _hardfork_times[ BEARS_HARDFORK_0_3 ] = fc::time_point_sec( BEARS_HARDFORK_0_3_TIME );
-   _hardfork_versions[ BEARS_HARDFORK_0_3 ] = BEARS_HARDFORK_0_3_VERSION;
-   FC_ASSERT( BEARS_HARDFORK_0_4 == 4, "Invalid hardfork configuration" );
-   _hardfork_times[ BEARS_HARDFORK_0_4 ] = fc::time_point_sec( BEARS_HARDFORK_0_4_TIME );
-   _hardfork_versions[ BEARS_HARDFORK_0_4 ] = BEARS_HARDFORK_0_4_VERSION;
-   FC_ASSERT( BEARS_HARDFORK_0_5 == 5, "Invalid hardfork configuration" );
-   _hardfork_times[ BEARS_HARDFORK_0_5 ] = fc::time_point_sec( BEARS_HARDFORK_0_5_TIME );
-   _hardfork_versions[ BEARS_HARDFORK_0_5 ] = BEARS_HARDFORK_0_5_VERSION;
-   FC_ASSERT( BEARS_HARDFORK_0_6 == 6, "Invalid hardfork configuration" );
-   _hardfork_times[ BEARS_HARDFORK_0_6 ] = fc::time_point_sec( BEARS_HARDFORK_0_6_TIME );
-   _hardfork_versions[ BEARS_HARDFORK_0_6 ] = BEARS_HARDFORK_0_6_VERSION;
-   FC_ASSERT( BEARS_HARDFORK_0_7 == 7, "Invalid hardfork configuration" );
-   _hardfork_times[ BEARS_HARDFORK_0_7 ] = fc::time_point_sec( BEARS_HARDFORK_0_7_TIME );
-   _hardfork_versions[ BEARS_HARDFORK_0_7 ] = BEARS_HARDFORK_0_7_VERSION;
-   FC_ASSERT( BEARS_HARDFORK_0_8 == 8, "Invalid hardfork configuration" );
-   _hardfork_times[ BEARS_HARDFORK_0_8 ] = fc::time_point_sec( BEARS_HARDFORK_0_8_TIME );
-   _hardfork_versions[ BEARS_HARDFORK_0_8 ] = BEARS_HARDFORK_0_8_VERSION;
-   FC_ASSERT( BEARS_HARDFORK_0_9 == 9, "Invalid hardfork configuration" );
-   _hardfork_times[ BEARS_HARDFORK_0_9 ] = fc::time_point_sec( BEARS_HARDFORK_0_9_TIME );
-   _hardfork_versions[ BEARS_HARDFORK_0_9 ] = BEARS_HARDFORK_0_9_VERSION;
-   FC_ASSERT( BEARS_HARDFORK_0_10 == 10, "Invalid hardfork configuration" );
-   _hardfork_times[ BEARS_HARDFORK_0_10 ] = fc::time_point_sec( BEARS_HARDFORK_0_10_TIME );
-   _hardfork_versions[ BEARS_HARDFORK_0_10 ] = BEARS_HARDFORK_0_10_VERSION;
-   FC_ASSERT( BEARS_HARDFORK_0_11 == 11, "Invalid hardfork configuration" );
-   _hardfork_times[ BEARS_HARDFORK_0_11 ] = fc::time_point_sec( BEARS_HARDFORK_0_11_TIME );
-   _hardfork_versions[ BEARS_HARDFORK_0_11 ] = BEARS_HARDFORK_0_11_VERSION;
-   FC_ASSERT( BEARS_HARDFORK_0_12 == 12, "Invalid hardfork configuration" );
-   _hardfork_times[ BEARS_HARDFORK_0_12 ] = fc::time_point_sec( BEARS_HARDFORK_0_12_TIME );
-   _hardfork_versions[ BEARS_HARDFORK_0_12 ] = BEARS_HARDFORK_0_12_VERSION;
-   FC_ASSERT( BEARS_HARDFORK_0_13 == 13, "Invalid hardfork configuration" );
-   _hardfork_times[ BEARS_HARDFORK_0_13 ] = fc::time_point_sec( BEARS_HARDFORK_0_13_TIME );
-   _hardfork_versions[ BEARS_HARDFORK_0_13 ] = BEARS_HARDFORK_0_13_VERSION;
-   FC_ASSERT( BEARS_HARDFORK_0_14 == 14, "Invalid hardfork configuration" );
-   _hardfork_times[ BEARS_HARDFORK_0_14 ] = fc::time_point_sec( BEARS_HARDFORK_0_14_TIME );
-   _hardfork_versions[ BEARS_HARDFORK_0_14 ] = BEARS_HARDFORK_0_14_VERSION;
-   FC_ASSERT( BEARS_HARDFORK_0_15 == 15, "Invalid hardfork configuration" );
-   _hardfork_times[ BEARS_HARDFORK_0_15 ] = fc::time_point_sec( BEARS_HARDFORK_0_15_TIME );
-   _hardfork_versions[ BEARS_HARDFORK_0_15 ] = BEARS_HARDFORK_0_15_VERSION;
-   FC_ASSERT( BEARS_HARDFORK_0_16 == 16, "Invalid hardfork configuration" );
-   _hardfork_times[ BEARS_HARDFORK_0_16 ] = fc::time_point_sec( BEARS_HARDFORK_0_16_TIME );
-   _hardfork_versions[ BEARS_HARDFORK_0_16 ] = BEARS_HARDFORK_0_16_VERSION;
-   FC_ASSERT( BEARS_HARDFORK_0_17 == 17, "Invalid hardfork configuration" );
-   _hardfork_times[ BEARS_HARDFORK_0_17 ] = fc::time_point_sec( BEARS_HARDFORK_0_17_TIME );
-   _hardfork_versions[ BEARS_HARDFORK_0_17 ] = BEARS_HARDFORK_0_17_VERSION;
-   FC_ASSERT( BEARS_HARDFORK_0_18 == 18, "Invalid hardfork configuration" );
-   _hardfork_times[ BEARS_HARDFORK_0_18 ] = fc::time_point_sec( BEARS_HARDFORK_0_18_TIME );
-   _hardfork_versions[ BEARS_HARDFORK_0_18 ] = BEARS_HARDFORK_0_18_VERSION;
-   FC_ASSERT( BEARS_HARDFORK_0_19 == 19, "Invalid hardfork configuration" );
-   _hardfork_times[ BEARS_HARDFORK_0_19 ] = fc::time_point_sec( BEARS_HARDFORK_0_19_TIME );
-   _hardfork_versions[ BEARS_HARDFORK_0_19 ] = BEARS_HARDFORK_0_19_VERSION;
-   FC_ASSERT( BEARS_HARDFORK_0_20 == 20, "Invalid hardfork configuration" );
-   _hardfork_times[ BEARS_HARDFORK_0_20 ] = fc::time_point_sec( BEARS_HARDFORK_0_20_TIME );
-   _hardfork_versions[ BEARS_HARDFORK_0_20 ] = BEARS_HARDFORK_0_20_VERSION;
+   FC_ASSERT( OFFER_HARDFORK_0_1 == 1, "Invalid hardfork configuration" );
+   _hardfork_times[ OFFER_HARDFORK_0_1 ] = fc::time_point_sec( OFFER_HARDFORK_0_1_TIME );
+   _hardfork_versions[ OFFER_HARDFORK_0_1 ] = OFFER_HARDFORK_0_1_VERSION;
+   FC_ASSERT( OFFER_HARDFORK_0_2 == 2, "Invlaid hardfork configuration" );
+   _hardfork_times[ OFFER_HARDFORK_0_2 ] = fc::time_point_sec( OFFER_HARDFORK_0_2_TIME );
+   _hardfork_versions[ OFFER_HARDFORK_0_2 ] = OFFER_HARDFORK_0_2_VERSION;
+   FC_ASSERT( OFFER_HARDFORK_0_3 == 3, "Invalid hardfork configuration" );
+   _hardfork_times[ OFFER_HARDFORK_0_3 ] = fc::time_point_sec( OFFER_HARDFORK_0_3_TIME );
+   _hardfork_versions[ OFFER_HARDFORK_0_3 ] = OFFER_HARDFORK_0_3_VERSION;
+   FC_ASSERT( OFFER_HARDFORK_0_4 == 4, "Invalid hardfork configuration" );
+   _hardfork_times[ OFFER_HARDFORK_0_4 ] = fc::time_point_sec( OFFER_HARDFORK_0_4_TIME );
+   _hardfork_versions[ OFFER_HARDFORK_0_4 ] = OFFER_HARDFORK_0_4_VERSION;
+   FC_ASSERT( OFFER_HARDFORK_0_5 == 5, "Invalid hardfork configuration" );
+   _hardfork_times[ OFFER_HARDFORK_0_5 ] = fc::time_point_sec( OFFER_HARDFORK_0_5_TIME );
+   _hardfork_versions[ OFFER_HARDFORK_0_5 ] = OFFER_HARDFORK_0_5_VERSION;
+   FC_ASSERT( OFFER_HARDFORK_0_6 == 6, "Invalid hardfork configuration" );
+   _hardfork_times[ OFFER_HARDFORK_0_6 ] = fc::time_point_sec( OFFER_HARDFORK_0_6_TIME );
+   _hardfork_versions[ OFFER_HARDFORK_0_6 ] = OFFER_HARDFORK_0_6_VERSION;
+   FC_ASSERT( OFFER_HARDFORK_0_7 == 7, "Invalid hardfork configuration" );
+   _hardfork_times[ OFFER_HARDFORK_0_7 ] = fc::time_point_sec( OFFER_HARDFORK_0_7_TIME );
+   _hardfork_versions[ OFFER_HARDFORK_0_7 ] = OFFER_HARDFORK_0_7_VERSION;
+   FC_ASSERT( OFFER_HARDFORK_0_8 == 8, "Invalid hardfork configuration" );
+   _hardfork_times[ OFFER_HARDFORK_0_8 ] = fc::time_point_sec( OFFER_HARDFORK_0_8_TIME );
+   _hardfork_versions[ OFFER_HARDFORK_0_8 ] = OFFER_HARDFORK_0_8_VERSION;
+   FC_ASSERT( OFFER_HARDFORK_0_9 == 9, "Invalid hardfork configuration" );
+   _hardfork_times[ OFFER_HARDFORK_0_9 ] = fc::time_point_sec( OFFER_HARDFORK_0_9_TIME );
+   _hardfork_versions[ OFFER_HARDFORK_0_9 ] = OFFER_HARDFORK_0_9_VERSION;
+   FC_ASSERT( OFFER_HARDFORK_0_10 == 10, "Invalid hardfork configuration" );
+   _hardfork_times[ OFFER_HARDFORK_0_10 ] = fc::time_point_sec( OFFER_HARDFORK_0_10_TIME );
+   _hardfork_versions[ OFFER_HARDFORK_0_10 ] = OFFER_HARDFORK_0_10_VERSION;
+   FC_ASSERT( OFFER_HARDFORK_0_11 == 11, "Invalid hardfork configuration" );
+   _hardfork_times[ OFFER_HARDFORK_0_11 ] = fc::time_point_sec( OFFER_HARDFORK_0_11_TIME );
+   _hardfork_versions[ OFFER_HARDFORK_0_11 ] = OFFER_HARDFORK_0_11_VERSION;
+   FC_ASSERT( OFFER_HARDFORK_0_12 == 12, "Invalid hardfork configuration" );
+   _hardfork_times[ OFFER_HARDFORK_0_12 ] = fc::time_point_sec( OFFER_HARDFORK_0_12_TIME );
+   _hardfork_versions[ OFFER_HARDFORK_0_12 ] = OFFER_HARDFORK_0_12_VERSION;
+   FC_ASSERT( OFFER_HARDFORK_0_13 == 13, "Invalid hardfork configuration" );
+   _hardfork_times[ OFFER_HARDFORK_0_13 ] = fc::time_point_sec( OFFER_HARDFORK_0_13_TIME );
+   _hardfork_versions[ OFFER_HARDFORK_0_13 ] = OFFER_HARDFORK_0_13_VERSION;
+   FC_ASSERT( OFFER_HARDFORK_0_14 == 14, "Invalid hardfork configuration" );
+   _hardfork_times[ OFFER_HARDFORK_0_14 ] = fc::time_point_sec( OFFER_HARDFORK_0_14_TIME );
+   _hardfork_versions[ OFFER_HARDFORK_0_14 ] = OFFER_HARDFORK_0_14_VERSION;
+   FC_ASSERT( OFFER_HARDFORK_0_15 == 15, "Invalid hardfork configuration" );
+   _hardfork_times[ OFFER_HARDFORK_0_15 ] = fc::time_point_sec( OFFER_HARDFORK_0_15_TIME );
+   _hardfork_versions[ OFFER_HARDFORK_0_15 ] = OFFER_HARDFORK_0_15_VERSION;
+   FC_ASSERT( OFFER_HARDFORK_0_16 == 16, "Invalid hardfork configuration" );
+   _hardfork_times[ OFFER_HARDFORK_0_16 ] = fc::time_point_sec( OFFER_HARDFORK_0_16_TIME );
+   _hardfork_versions[ OFFER_HARDFORK_0_16 ] = OFFER_HARDFORK_0_16_VERSION;
+   FC_ASSERT( OFFER_HARDFORK_0_17 == 17, "Invalid hardfork configuration" );
+   _hardfork_times[ OFFER_HARDFORK_0_17 ] = fc::time_point_sec( OFFER_HARDFORK_0_17_TIME );
+   _hardfork_versions[ OFFER_HARDFORK_0_17 ] = OFFER_HARDFORK_0_17_VERSION;
+   FC_ASSERT( OFFER_HARDFORK_0_18 == 18, "Invalid hardfork configuration" );
+   _hardfork_times[ OFFER_HARDFORK_0_18 ] = fc::time_point_sec( OFFER_HARDFORK_0_18_TIME );
+   _hardfork_versions[ OFFER_HARDFORK_0_18 ] = OFFER_HARDFORK_0_18_VERSION;
+   FC_ASSERT( OFFER_HARDFORK_0_19 == 19, "Invalid hardfork configuration" );
+   _hardfork_times[ OFFER_HARDFORK_0_19 ] = fc::time_point_sec( OFFER_HARDFORK_0_19_TIME );
+   _hardfork_versions[ OFFER_HARDFORK_0_19 ] = OFFER_HARDFORK_0_19_VERSION;
+   FC_ASSERT( OFFER_HARDFORK_0_20 == 20, "Invalid hardfork configuration" );
+   _hardfork_times[ OFFER_HARDFORK_0_20 ] = fc::time_point_sec( OFFER_HARDFORK_0_20_TIME );
+   _hardfork_versions[ OFFER_HARDFORK_0_20 ] = OFFER_HARDFORK_0_20_VERSION;
    
 #ifdef IS_TEST_NET
-   FC_ASSERT( BEARS_HARDFORK_0_21 == 21, "Invalid hardfork configuration" );
-   _hardfork_times[ BEARS_HARDFORK_0_21 ] = fc::time_point_sec( BEARS_HARDFORK_0_21_TIME );
-   _hardfork_versions[ BEARS_HARDFORK_0_21 ] = BEARS_HARDFORK_0_21_VERSION;
+   FC_ASSERT( OFFER_HARDFORK_0_21 == 21, "Invalid hardfork configuration" );
+   _hardfork_times[ OFFER_HARDFORK_0_21 ] = fc::time_point_sec( OFFER_HARDFORK_0_21_TIME );
+   _hardfork_versions[ OFFER_HARDFORK_0_21 ] = OFFER_HARDFORK_0_21_VERSION;
 #endif
 
 
    const auto& hardforks = get_hardfork_property_object();
-   FC_ASSERT( hardforks.last_hardfork <= BEARS_NUM_HARDFORKS, "Chain knows of more hardforks than configuration", ("hardforks.last_hardfork",hardforks.last_hardfork)("BEARS_NUM_HARDFORKS",BEARS_NUM_HARDFORKS) );
-   FC_ASSERT( _hardfork_versions[ hardforks.last_hardfork ] <= BEARS_BLOCKCHAIN_VERSION, "Blockchain version is older than last applied hardfork" );
-   FC_ASSERT( BEARS_BLOCKCHAIN_HARDFORK_VERSION >= BEARS_BLOCKCHAIN_VERSION );
-   FC_ASSERT( BEARS_BLOCKCHAIN_HARDFORK_VERSION == _hardfork_versions[ BEARS_NUM_HARDFORKS ] );
+   FC_ASSERT( hardforks.last_hardfork <= OFFER_NUM_HARDFORKS, "Chain knows of more hardforks than configuration", ("hardforks.last_hardfork",hardforks.last_hardfork)("OFFER_NUM_HARDFORKS",OFFER_NUM_HARDFORKS) );
+   FC_ASSERT( _hardfork_versions[ hardforks.last_hardfork ] <= OFFER_BLOCKCHAIN_VERSION, "Blockchain version is older than last applied hardfork" );
+   FC_ASSERT( OFFER_BLOCKCHAIN_HARDFORK_VERSION >= OFFER_BLOCKCHAIN_VERSION );
+   FC_ASSERT( OFFER_BLOCKCHAIN_HARDFORK_VERSION == _hardfork_versions[ OFFER_NUM_HARDFORKS ] );
 }
 
 void database::process_hardforks()
@@ -4688,12 +4688,12 @@ void database::process_hardforks()
       // If there are upcoming hardforks and the next one is later, do nothing
       const auto& hardforks = get_hardfork_property_object();
 
-      if( has_hardfork( LATEST_HARD_FORK ))//BEARS_HARDFORK_0_5__54 ) )
+      if( has_hardfork( LATEST_HARD_FORK ))//OFFER_HARDFORK_0_5__54 ) )
       {
          while( _hardfork_versions[ hardforks.last_hardfork ] < hardforks.next_hardfork
             && hardforks.next_hardfork_time <= head_block_time() )
          {
-            if( hardforks.last_hardfork < BEARS_NUM_HARDFORKS ) {
+            if( hardforks.last_hardfork < OFFER_NUM_HARDFORKS ) {
                apply_hardfork( hardforks.last_hardfork + 1 );
             }
             else
@@ -4702,9 +4702,9 @@ void database::process_hardforks()
       }
       else
       {
-         while( hardforks.last_hardfork < BEARS_NUM_HARDFORKS
+         while( hardforks.last_hardfork < OFFER_NUM_HARDFORKS
                && _hardfork_times[ hardforks.last_hardfork + 1 ] <= head_block_time()
-               && hardforks.last_hardfork < LATEST_HARD_FORK )//BEARS_HARDFORK_0_5__54 )
+               && hardforks.last_hardfork < LATEST_HARD_FORK )//OFFER_HARDFORK_0_5__54 )
          {
             apply_hardfork( hardforks.last_hardfork + 1 );
          }
@@ -4727,9 +4727,9 @@ void database::set_hardfork( uint32_t hardfork, bool apply_now )
 {
    auto const& hardforks = get_hardfork_property_object();
 
-   for( uint32_t i = hardforks.last_hardfork + 1; i <= hardfork && i <= BEARS_NUM_HARDFORKS; i++ )
+   for( uint32_t i = hardforks.last_hardfork + 1; i <= hardfork && i <= OFFER_NUM_HARDFORKS; i++ )
    {
-      if( i <= LATEST_HARD_FORK )//BEARS_HARDFORK_0_5__54 )
+      if( i <= LATEST_HARD_FORK )//OFFER_HARDFORK_0_5__54 )
          _hardfork_times[i] = head_block_time();
       else
       {
@@ -4755,30 +4755,30 @@ void database::apply_hardfork( uint32_t hardfork )
 
    switch( hardfork )
    {
-      case BEARS_HARDFORK_0_1:
+      case OFFER_HARDFORK_0_1:
          perform_coining_share_split( 1000000 );
          break;
-      case BEARS_HARDFORK_0_2:
+      case OFFER_HARDFORK_0_2:
          retally_witness_votes();
          break;
-      case BEARS_HARDFORK_0_3:
+      case OFFER_HARDFORK_0_3:
          retally_witness_votes();
          break;
-      case BEARS_HARDFORK_0_4:
+      case OFFER_HARDFORK_0_4:
          reset_virtual_schedule_time(*this);
          break;
-      case BEARS_HARDFORK_0_5:
+      case OFFER_HARDFORK_0_5:
          break;
-      case BEARS_HARDFORK_0_6:
+      case OFFER_HARDFORK_0_6:
          retally_witness_vote_counts();
          retally_comment_children();
          break;
-      case BEARS_HARDFORK_0_7:
+      case OFFER_HARDFORK_0_7:
          break;
-      case BEARS_HARDFORK_0_8:
+      case OFFER_HARDFORK_0_8:
          retally_witness_vote_counts(true);
          break;
-      case BEARS_HARDFORK_0_9:
+      case OFFER_HARDFORK_0_9:
          {
             for( const std::string& acc : hardfork9::get_compromised_accounts() )
             {
@@ -4796,12 +4796,12 @@ void database::apply_hardfork( uint32_t hardfork )
             }
          }
          break;
-      case BEARS_HARDFORK_0_10:
+      case OFFER_HARDFORK_0_10:
          retally_liquidity_weight();
          break;
-      case BEARS_HARDFORK_0_11:
+      case OFFER_HARDFORK_0_11:
          break;
-      case BEARS_HARDFORK_0_12:
+      case OFFER_HARDFORK_0_12:
          {
             const auto& comment_idx = get_index< comment_index >().indices();
 
@@ -4810,14 +4810,14 @@ void database::apply_hardfork( uint32_t hardfork )
                // At the hardfork time, all new posts with no votes get their cashout time set to +12 hrs from head block time.
                // All posts with a payout get their cashout time set to +30 days. This hardfork takes place within 30 days
                // initial payout so we don't have to handle the case of posts that should be frozen that aren't
-               if( itr->parent_author == BEARS_ROOT_POST_PARENT )
+               if( itr->parent_author == OFFER_ROOT_POST_PARENT )
                {
                   // Post has not been paid out and has no votes (cashout_time == 0 === net_rshares == 0, under current semmantics)
                   if( itr->last_payout == fc::time_point_sec::min() && itr->cashout_time == fc::time_point_sec::maximum() )
                   {
                      modify( *itr, [&]( comment_object & c )
                      {
-                        c.cashout_time = head_block_time() + BEARS_CASHOUT_WINDOW_SECONDS_PRE_HF17;
+                        c.cashout_time = head_block_time() + OFFER_CASHOUT_WINDOW_SECONDS_PRE_HF17;
                      });
                   }
                   // Has been paid out, needs to be on second cashout window
@@ -4825,74 +4825,74 @@ void database::apply_hardfork( uint32_t hardfork )
                   {
                      modify( *itr, [&]( comment_object& c )
                      {
-                        c.cashout_time = c.last_payout + BEARS_SECOND_CASHOUT_WINDOW;
+                        c.cashout_time = c.last_payout + OFFER_SECOND_CASHOUT_WINDOW;
                      });
                   }
                }
             }
 
-            modify( get< account_authority_object, by_account >( BEARS_MINER_ACCOUNT ), [&]( account_authority_object& auth )
+            modify( get< account_authority_object, by_account >( OFFER_MINER_ACCOUNT ), [&]( account_authority_object& auth )
             {
                auth.posting = authority();
                auth.posting.weight_threshold = 1;
             });
 
-            modify( get< account_authority_object, by_account >( BEARS_NULL_ACCOUNT ), [&]( account_authority_object& auth )
+            modify( get< account_authority_object, by_account >( OFFER_NULL_ACCOUNT ), [&]( account_authority_object& auth )
             {
                auth.posting = authority();
                auth.posting.weight_threshold = 1;
             });
 
-            modify( get< account_authority_object, by_account >( BEARS_TEMP_ACCOUNT ), [&]( account_authority_object& auth )
+            modify( get< account_authority_object, by_account >( OFFER_TEMP_ACCOUNT ), [&]( account_authority_object& auth )
             {
                auth.posting = authority();
                auth.posting.weight_threshold = 1;
             });
          }
          break;
-      case BEARS_HARDFORK_0_13:
+      case OFFER_HARDFORK_0_13:
          break;
-      case BEARS_HARDFORK_0_14:
+      case OFFER_HARDFORK_0_14:
          break;
-      case BEARS_HARDFORK_0_15:
+      case OFFER_HARDFORK_0_15:
          break;
-      case BEARS_HARDFORK_0_16:
+      case OFFER_HARDFORK_0_16:
          {
             modify( get_feed_history(), [&]( feed_history_object& fho )
             {
-               while( fho.price_history.size() > BEARS_FEED_HISTORY_WINDOW )
+               while( fho.price_history.size() > OFFER_FEED_HISTORY_WINDOW )
                   fho.price_history.pop_front();
             });
          }
          break;
-      case BEARS_HARDFORK_0_17:
+      case OFFER_HARDFORK_0_17:
          {
             static_assert(
-               BEARS_MAX_VOTED_WITNESSES_HF0 + BEARS_MAX_MINER_WITNESSES_HF0 + BEARS_MAX_RUNNER_WITNESSES_HF0 == BEARS_MAX_WITNESSES,
-               "HF0 witness counts must add up to BEARS_MAX_WITNESSES" );
+               OFFER_MAX_VOTED_WITNESSES_HF0 + OFFER_MAX_MINER_WITNESSES_HF0 + OFFER_MAX_RUNNER_WITNESSES_HF0 == OFFER_MAX_WITNESSES,
+               "HF0 witness counts must add up to OFFER_MAX_WITNESSES" );
             static_assert(
-               BEARS_MAX_VOTED_WITNESSES_HF17 + BEARS_MAX_MINER_WITNESSES_HF17 + BEARS_MAX_RUNNER_WITNESSES_HF17 == BEARS_MAX_WITNESSES,
-               "HF17 witness counts must add up to BEARS_MAX_WITNESSES" );
+               OFFER_MAX_VOTED_WITNESSES_HF17 + OFFER_MAX_MINER_WITNESSES_HF17 + OFFER_MAX_RUNNER_WITNESSES_HF17 == OFFER_MAX_WITNESSES,
+               "HF17 witness counts must add up to OFFER_MAX_WITNESSES" );
 
             modify( get_witness_schedule_object(), [&]( witness_schedule_object& wso )
             {
-               wso.max_voted_witnesses = BEARS_MAX_VOTED_WITNESSES_HF17;
-               wso.max_miner_witnesses = BEARS_MAX_MINER_WITNESSES_HF17;
-               wso.max_runner_witnesses = BEARS_MAX_RUNNER_WITNESSES_HF17;
+               wso.max_voted_witnesses = OFFER_MAX_VOTED_WITNESSES_HF17;
+               wso.max_miner_witnesses = OFFER_MAX_MINER_WITNESSES_HF17;
+               wso.max_runner_witnesses = OFFER_MAX_RUNNER_WITNESSES_HF17;
             });
 
             const auto& gpo = get_dynamic_global_properties();
 
             auto post_rf = create< reward_fund_object >( [&]( reward_fund_object& rfo )
             {
-               rfo.name = BEARS_POST_REWARD_FUND_NAME;
+               rfo.name = OFFER_POST_REWARD_FUND_NAME;
                rfo.last_update = head_block_time();
-               rfo.content_constant = BEARS_CONTENT_CONSTANT_HF0;
-               rfo.percent_curation_rewards = BEARS_1_PERCENT * 25;
-               rfo.percent_content_rewards = BEARS_100_PERCENT;
-               rfo.reward_balance = gpo.total_reward_fund_bears;
+               rfo.content_constant = OFFER_CONTENT_CONSTANT_HF0;
+               rfo.percent_curation_rewards = OFFER_1_PERCENT * 25;
+               rfo.percent_content_rewards = OFFER_100_PERCENT;
+               rfo.reward_balance = gpo.total_reward_fund_offer;
 #ifndef IS_TEST_NET
-               rfo.recent_claims = BEARS_HF_17_RECENT_CLAIMS;
+               rfo.recent_claims = OFFER_HF_17_RECENT_CLAIMS;
 #endif
                rfo.author_reward_curve = curve_id::quadratic;
                rfo.curation_reward_curve = curve_id::quadratic_curation;
@@ -4905,7 +4905,7 @@ void database::apply_hardfork( uint32_t hardfork )
 
             modify( gpo, [&]( dynamic_global_property_object& g )
             {
-               g.total_reward_fund_bears = asset( 0, BEARS_SYMBOL );
+               g.total_reward_fund_offer = asset( 0, OFFER_SYMBOL );
                g.total_reward_shares2 = 0;
             });
 
@@ -4924,9 +4924,9 @@ void database::apply_hardfork( uint32_t hardfork )
             const auto& comment_idx = get_index< comment_index, by_cashout_time >();
             const auto& by_root_idx = get_index< comment_index, by_root >();
             vector< const comment_object* > root_posts;
-            root_posts.reserve( BEARS_HF_17_NUM_POSTS );
+            root_posts.reserve( OFFER_HF_17_NUM_POSTS );
             vector< const comment_object* > replies;
-            replies.reserve( BEARS_HF_17_NUM_REPLIES );
+            replies.reserve( OFFER_HF_17_NUM_REPLIES );
 
             for( auto itr = comment_idx.begin(); itr != comment_idx.end() && itr->cashout_time < fc::time_point_sec::maximum(); ++itr )
             {
@@ -4942,7 +4942,7 @@ void database::apply_hardfork( uint32_t hardfork )
             {
                modify( *itr, [&]( comment_object& c )
                {
-                  c.cashout_time = std::max( c.created + BEARS_CASHOUT_WINDOW_SECONDS, c.cashout_time );
+                  c.cashout_time = std::max( c.created + OFFER_CASHOUT_WINDOW_SECONDS, c.cashout_time );
                });
             }
 
@@ -4950,24 +4950,24 @@ void database::apply_hardfork( uint32_t hardfork )
             {
                modify( *itr, [&]( comment_object& c )
                {
-                  c.cashout_time = std::max( calculate_discussion_payout_time( c ), c.created + BEARS_CASHOUT_WINDOW_SECONDS );
+                  c.cashout_time = std::max( calculate_discussion_payout_time( c ), c.created + OFFER_CASHOUT_WINDOW_SECONDS );
                });
             }
          }
          break;
-      case BEARS_HARDFORK_0_18:
+      case OFFER_HARDFORK_0_18:
          break;
-      case BEARS_HARDFORK_0_19:
+      case OFFER_HARDFORK_0_19:
          {
             modify( get_dynamic_global_properties(), [&]( dynamic_global_property_object& gpo )
             {
-               gpo.vote_power_reserve_rate = BEARS_REDUCED_VOTE_POWER_RATE;
+               gpo.vote_power_reserve_rate = OFFER_REDUCED_VOTE_POWER_RATE;
             });
 
-            modify( get< reward_fund_object, by_name >( BEARS_POST_REWARD_FUND_NAME ), [&]( reward_fund_object &rfo )
+            modify( get< reward_fund_object, by_name >( OFFER_POST_REWARD_FUND_NAME ), [&]( reward_fund_object &rfo )
             {
 #ifndef IS_TEST_NET
-               rfo.recent_claims = BEARS_HF_19_RECENT_CLAIMS;
+               rfo.recent_claims = OFFER_HF_19_RECENT_CLAIMS;
 #endif
                rfo.author_reward_curve = curve_id::linear;
                rfo.curation_reward_curve = curve_id::square_root;
@@ -4992,14 +4992,14 @@ void database::apply_hardfork( uint32_t hardfork )
             }
          }
          break;
-      case BEARS_HARDFORK_0_20:
+      case OFFER_HARDFORK_0_20:
          {
             modify( get_dynamic_global_properties(), [&]( dynamic_global_property_object& gpo )
             {
-               gpo.delegation_return_period = BEARS_DELEGATION_RETURN_PERIOD_HF20;
-               gpo.reverse_auction_seconds = BEARS_REVERSE_AUCTION_WINDOW_SECONDS_HF20;
-               gpo.bsd_stop_percent = BEARS_BSD_STOP_PERCENT_HF20;
-               gpo.bsd_start_percent = BEARS_BSD_START_PERCENT_HF20;
+               gpo.delegation_return_period = OFFER_DELEGATION_RETURN_PERIOD_HF20;
+               gpo.reverse_auction_seconds = OFFER_REVERSE_AUCTION_WINDOW_SECONDS_HF20;
+               gpo.bsd_stop_percent = OFFER_BSD_STOP_PERCENT_HF20;
+               gpo.bsd_start_percent = OFFER_BSD_START_PERCENT_HF20;
                gpo.available_account_subsidies = 0;
             });
 
@@ -5012,19 +5012,19 @@ void database::apply_hardfork( uint32_t hardfork )
                {
                   modify( get< witness_object, by_name >( witness ), [&]( witness_object& w )
                   {
-                     w.props.account_creation_fee = asset( w.props.account_creation_fee.amount * BEARS_CREATE_ACCOUNT_WITH_BEARS_MODIFIER, BEARS_SYMBOL );
+                     w.props.account_creation_fee = asset( w.props.account_creation_fee.amount * OFFER_CREATE_ACCOUNT_WITH_OFFER_MODIFIER, OFFER_SYMBOL );
                   });
                }
             }
 
             modify( wso, [&]( witness_schedule_object& wso )
             {
-               wso.median_props.account_creation_fee = asset( wso.median_props.account_creation_fee.amount * BEARS_CREATE_ACCOUNT_WITH_BEARS_MODIFIER, BEARS_SYMBOL );
+               wso.median_props.account_creation_fee = asset( wso.median_props.account_creation_fee.amount * OFFER_CREATE_ACCOUNT_WITH_OFFER_MODIFIER, OFFER_SYMBOL );
             });
          }
          break;
    #ifdef IS_TEST_NET
-      case BEARS_HARDFORK_0_21:
+      case OFFER_HARDFORK_0_21:
          break;
 #endif
       default:
@@ -5061,10 +5061,10 @@ void database::validate_invariants()const
    try
    {
       const auto& account_idx = get_index<account_index>().indices().get<by_name>();
-      asset total_supply = asset( 0, BEARS_SYMBOL );
+      asset total_supply = asset( 0, OFFER_SYMBOL );
       asset total_bsd = asset( 0, BSD_SYMBOL );
       asset total_coining = asset( 0, COINS_SYMBOL );
-      asset pending_coining_bears = asset( 0, BEARS_SYMBOL );
+      asset pending_coining_offer = asset( 0, OFFER_SYMBOL );
       share_type total_vsf_votes = share_type( 0 );
 
       auto gpo = get_dynamic_global_properties();
@@ -5078,17 +5078,17 @@ void database::validate_invariants()const
       {
          total_supply += itr->balance;
          total_supply += itr->savings_balance;
-         total_supply += itr->reward_bears_balance;
+         total_supply += itr->reward_offer_balance;
          total_bsd += itr->bsd_balance;
          total_bsd += itr->savings_bsd_balance;
          total_bsd += itr->reward_bsd_balance;
          total_coining += itr->coining_shares;
          total_coining += itr->reward_coining_balance;
-         pending_coining_bears += itr->reward_coining_bears;
-         total_vsf_votes += ( itr->proxy == BEARS_PROXY_TO_SELF_ACCOUNT ?
+         pending_coining_offer += itr->reward_coining_offer;
+         total_vsf_votes += ( itr->proxy == OFFER_PROXY_TO_SELF_ACCOUNT ?
                                  itr->witness_vote_weight() :
-                                 ( BEARS_MAX_PROXY_RECURSION_DEPTH > 0 ?
-                                      itr->proxied_vsf_votes[BEARS_MAX_PROXY_RECURSION_DEPTH - 1] :
+                                 ( OFFER_MAX_PROXY_RECURSION_DEPTH > 0 ?
+                                      itr->proxied_vsf_votes[OFFER_MAX_PROXY_RECURSION_DEPTH - 1] :
                                       itr->coining_shares.amount ) );
       }
 
@@ -5096,7 +5096,7 @@ void database::validate_invariants()const
 
       for( auto itr = convert_request_idx.begin(); itr != convert_request_idx.end(); ++itr )
       {
-         if( itr->amount.symbol == BEARS_SYMBOL )
+         if( itr->amount.symbol == OFFER_SYMBOL )
             total_supply += itr->amount;
          else if( itr->amount.symbol == BSD_SYMBOL )
             total_bsd += itr->amount;
@@ -5108,9 +5108,9 @@ void database::validate_invariants()const
 
       for( auto itr = limit_order_idx.begin(); itr != limit_order_idx.end(); ++itr )
       {
-         if( itr->sell_price.base.symbol == BEARS_SYMBOL )
+         if( itr->sell_price.base.symbol == OFFER_SYMBOL )
          {
-            total_supply += asset( itr->for_sale, BEARS_SYMBOL );
+            total_supply += asset( itr->for_sale, OFFER_SYMBOL );
          }
          else if ( itr->sell_price.base.symbol == BSD_SYMBOL )
          {
@@ -5122,27 +5122,27 @@ void database::validate_invariants()const
 
       for( auto itr = escrow_idx.begin(); itr != escrow_idx.end(); ++itr )
       {
-         total_supply += itr->bears_balance;
+         total_supply += itr->offer_balance;
          total_bsd += itr->bsd_balance;
 
-         if( itr->pending_fee.symbol == BEARS_SYMBOL )
+         if( itr->pending_fee.symbol == OFFER_SYMBOL )
             total_supply += itr->pending_fee;
          else if( itr->pending_fee.symbol == BSD_SYMBOL )
             total_bsd += itr->pending_fee;
          else
-            FC_ASSERT( false, "found escrow pending fee that is not BSD or BEARS" );
+            FC_ASSERT( false, "found escrow pending fee that is not BSD or OFFER" );
       }
 
       const auto& savings_withdraw_idx = get_index< savings_withdraw_index >().indices().get< by_id >();
 
       for( auto itr = savings_withdraw_idx.begin(); itr != savings_withdraw_idx.end(); ++itr )
       {
-         if( itr->amount.symbol == BEARS_SYMBOL )
+         if( itr->amount.symbol == OFFER_SYMBOL )
             total_supply += itr->amount;
          else if( itr->amount.symbol == BSD_SYMBOL )
             total_bsd += itr->amount;
          else
-            FC_ASSERT( false, "found savings withdraw that is not BSD or BEARS" );
+            FC_ASSERT( false, "found savings withdraw that is not BSD or OFFER" );
       }
 
       const auto& reward_idx = get_index< reward_fund_index, by_id >();
@@ -5152,13 +5152,13 @@ void database::validate_invariants()const
          total_supply += itr->reward_balance;
       }
 
-      total_supply += gpo.total_coining_fund_bears + gpo.total_reward_fund_bears + gpo.pending_rewarded_coining_bears;
+      total_supply += gpo.total_coining_fund_offer + gpo.total_reward_fund_offer + gpo.pending_rewarded_coining_offer;
 
       FC_ASSERT( gpo.current_supply == total_supply, "", ("gpo.current_supply",gpo.current_supply)("total_supply",total_supply) );
       FC_ASSERT( gpo.current_bsd_supply == total_bsd, "", ("gpo.current_bsd_supply",gpo.current_bsd_supply)("total_bsd",total_bsd) );
       FC_ASSERT( gpo.total_coining_shares + gpo.pending_rewarded_coining_shares == total_coining, "", ("gpo.total_coining_shares",gpo.total_coining_shares)("total_coining",total_coining) );
       FC_ASSERT( gpo.total_coining_shares.amount == total_vsf_votes, "", ("total_coining_shares",gpo.total_coining_shares)("total_vsf_votes",total_vsf_votes) );
-      FC_ASSERT( gpo.pending_rewarded_coining_bears == pending_coining_bears, "", ("pending_rewarded_coining_bears",gpo.pending_rewarded_coining_bears)("pending_coining_bears", pending_coining_bears));
+      FC_ASSERT( gpo.pending_rewarded_coining_offer == pending_coining_offer, "", ("pending_rewarded_coining_offer",gpo.pending_rewarded_coining_offer)("pending_coining_offer", pending_coining_offer));
 
       FC_ASSERT( gpo.virtual_supply >= gpo.current_supply );
       if ( !get_feed_history().current_median_history.is_null() )
@@ -5170,7 +5170,7 @@ void database::validate_invariants()const
    FC_CAPTURE_LOG_AND_RETHROW( (head_block_num()) );
 }
 
-#ifdef BEARS_ENABLE_SMT
+#ifdef OFFER_ENABLE_SMT
 
 namespace {
    template <typename index_type, typename lambda>
@@ -5220,7 +5220,7 @@ void database::validate_smt_invariants()const
             }
       });
 
-      // - Process reward balances, collecting SMT counterparts of 'reward_bears_balance', 'reward_coining_balance' & 'reward_coining_bears'.
+      // - Process reward balances, collecting SMT counterparts of 'reward_offer_balance', 'reward_coining_balance' & 'reward_coining_offer'.
       const auto& rewards_balance_idx = get_index< account_rewards_balance_index, by_id >();
       add_from_balance_index( rewards_balance_idx, [ &theMap ] ( const account_rewards_balance_object& rewards )
       {
@@ -5270,7 +5270,7 @@ void database::validate_smt_invariants()const
          asset total_liquid_supply = totalIt == theMap.end() ? asset(0, smt.liquid_symbol) :
             ( totalIt->second.liquid + totalIt->second.pending_liquid );
          total_liquid_supply += asset( smt.total_coining_fund_smt, smt.liquid_symbol )
-                             /*+ gpo.total_reward_fund_bears */
+                             /*+ gpo.total_reward_fund_offer */
                              + asset( smt.pending_rewarded_coining_smt, smt.liquid_symbol );
 #pragma message( "TODO: Supplement ^ once SMT rewards are implemented" )
          FC_ASSERT( asset(smt.current_supply, smt.liquid_symbol) == total_liquid_supply,
@@ -5309,11 +5309,11 @@ void database::perform_coining_share_split( uint32_t magnitude )
             a.coining_shares.amount *= magnitude;
             a.withdrawn             *= magnitude;
             a.to_withdraw           *= magnitude;
-            a.coining_withdraw_rate  = asset( a.to_withdraw / BEARS_COINING_WITHDRAW_INTERVALS_PRE_HF_16, COINS_SYMBOL );
+            a.coining_withdraw_rate  = asset( a.to_withdraw / OFFER_COINING_WITHDRAW_INTERVALS_PRE_HF_16, COINS_SYMBOL );
             if( a.coining_withdraw_rate.amount == 0 )
                a.coining_withdraw_rate.amount = 1;
 
-            for( uint32_t i = 0; i < BEARS_MAX_PROXY_RECURSION_DEPTH; ++i )
+            for( uint32_t i = 0; i < OFFER_MAX_PROXY_RECURSION_DEPTH; ++i )
                a.proxied_vsf_votes[i] *= magnitude;
          } );
       }
@@ -5354,7 +5354,7 @@ void database::retally_comment_children()
 
    for( auto itr = cidx.begin(); itr != cidx.end(); ++itr )
    {
-      if( itr->parent_author != BEARS_ROOT_POST_PARENT )
+      if( itr->parent_author != OFFER_ROOT_POST_PARENT )
       {
 // Low memory nodes only need immediate child count, full nodes track total children
 #ifdef IS_LOW_MEM
@@ -5371,7 +5371,7 @@ void database::retally_comment_children()
                c.children++;
             });
 
-            if( parent->parent_author != BEARS_ROOT_POST_PARENT )
+            if( parent->parent_author != OFFER_ROOT_POST_PARENT )
                parent = &get_comment( parent->parent_author, parent->parent_permlink );
             else
                parent = nullptr;
@@ -5400,7 +5400,7 @@ void database::retally_witness_votes()
    // Apply all existing votes by account
    for( auto itr = account_idx.begin(); itr != account_idx.end(); ++itr )
    {
-      if( itr->proxy != BEARS_PROXY_TO_SELF_ACCOUNT ) continue;
+      if( itr->proxy != OFFER_PROXY_TO_SELF_ACCOUNT ) continue;
 
       const auto& a = *itr;
 
@@ -5423,7 +5423,7 @@ void database::retally_witness_vote_counts( bool force )
    {
       const auto& a = *itr;
       uint16_t witnesses_voted_for = 0;
-      if( force || (a.proxy != BEARS_PROXY_TO_SELF_ACCOUNT  ) )
+      if( force || (a.proxy != OFFER_PROXY_TO_SELF_ACCOUNT  ) )
       {
         const auto& vidx = get_index< witness_vote_index >().indices().get< by_account_witness >();
         auto wit_itr = vidx.lower_bound( boost::make_tuple( a.name, account_name_type() ) );
@@ -5443,7 +5443,7 @@ void database::retally_witness_vote_counts( bool force )
    }
 }
 
-#ifdef BEARS_ENABLE_SMT
+#ifdef OFFER_ENABLE_SMT
 // 1. NAI number is stored in 32 bits, minus 4 for precision, minus 1 for control.
 // 2. NAI string has 8 characters (each between '0' and '9') available (11 minus '@@', minus checksum character is 8 )
 // 3. Max 27 bit decimal is 134,217,727 but only 8 characters are available to represent it as string so we are left
@@ -5484,4 +5484,4 @@ vector< asset_symbol_type > database::get_smt_next_identifier()
 index_info::index_info() {}
 index_info::~index_info() {}
 
-} } //bears::chain
+} } //offer::chain

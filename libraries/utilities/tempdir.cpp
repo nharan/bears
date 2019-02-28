@@ -22,18 +22,18 @@
  * THE SOFTWARE.
  */
 
-#include <bears/utilities/tempdir.hpp>
+#include <offer/utilities/tempdir.hpp>
 
 #include <cstdlib>
 
-namespace bears { namespace utilities {
+namespace offer { namespace utilities {
 
 fc::path temp_directory_path()
 {
-   const char* bearshares_tempdir = getenv("BEARS_TEMPDIR");
-   if( bearshares_tempdir != nullptr )
-      return fc::path( bearshares_tempdir );
-   return fc::temp_directory_path() / "bears-tmp";
+   const char* offerit_tempdir = getenv("OFFER_TEMPDIR");
+   if( offerit_tempdir != nullptr )
+      return fc::path( offerit_tempdir );
+   return fc::temp_directory_path() / "offer-tmp";
 }
 
-} } // bears::utilities
+} } // offer::utilities

@@ -1,25 +1,25 @@
-#include <bears/plugins/follow/follow_plugin.hpp>
-#include <bears/plugins/follow/follow_objects.hpp>
-#include <bears/plugins/follow/follow_operations.hpp>
-#include <bears/plugins/follow/inc_performance.hpp>
+#include <offer/plugins/follow/follow_plugin.hpp>
+#include <offer/plugins/follow/follow_objects.hpp>
+#include <offer/plugins/follow/follow_operations.hpp>
+#include <offer/plugins/follow/inc_performance.hpp>
 
-#include <bears/chain/util/impacted.hpp>
+#include <offer/chain/util/impacted.hpp>
 
-#include <bears/protocol/config.hpp>
+#include <offer/protocol/config.hpp>
 
-#include <bears/chain/database.hpp>
-#include <bears/chain/index.hpp>
-#include <bears/chain/account_object.hpp>
-#include <bears/chain/comment_object.hpp>
+#include <offer/chain/database.hpp>
+#include <offer/chain/index.hpp>
+#include <offer/chain/account_object.hpp>
+#include <offer/chain/comment_object.hpp>
 
 #include <fc/smart_ref_impl.hpp>
 #include <fc/thread/thread.hpp>
 
 #include <memory>
 
-namespace bears { namespace plugins { namespace follow {
+namespace offer { namespace plugins { namespace follow {
 
-using namespace bears::protocol;
+using namespace offer::protocol;
 
 namespace detail {
 
@@ -27,7 +27,7 @@ class follow_plugin_impl
 {
    public:
       follow_plugin_impl( follow_plugin& _plugin ) :
-         _db( appbase::app().get_plugin< bears::plugins::chain::chain_plugin >().db() ),
+         _db( appbase::app().get_plugin< offer::plugins::chain::chain_plugin >().db() ),
          _self( _plugin ) {}
       ~follow_plugin_impl() {}
 
@@ -149,7 +149,7 @@ struct post_operation_visitor
    {
       try
       {
-         if( op.id == BEARS_FOLLOW_PLUGIN_NAME )
+         if( op.id == OFFER_FOLLOW_PLUGIN_NAME )
          {
             custom_json_operation new_cop;
 
@@ -339,7 +339,7 @@ void follow_plugin::plugin_initialize( const boost::program_options::variables_m
       my = std::make_unique< detail::follow_plugin_impl >( *this );
 
       // Each plugin needs its own evaluator registry.
-      _custom_operation_interpreter = std::make_shared< generic_custom_operation_interpreter< bears::plugins::follow::follow_plugin_operation > >( my->_db );
+      _custom_operation_interpreter = std::make_shared< generic_custom_operation_interpreter< offer::plugins::follow::follow_plugin_operation > >( my->_db );
 
       // Add each operation evaluator to the registry
       _custom_operation_interpreter->register_evaluator< follow_evaluator >( this );
@@ -380,4 +380,4 @@ void follow_plugin::plugin_shutdown()
    chain::util::disconnect_signal( my->_post_apply_operation_conn );
 }
 
-} } } // bears::plugins::follow
+} } } // offer::plugins::follow

@@ -1,8 +1,8 @@
 #!/bin/bash
 set -e
-export IMAGE_NAME="bearshares/bears:$BRANCH_NAME"
-if [[ $IMAGE_NAME == "bearshares/bears:stable" ]] ; then
-  IMAGE_NAME="bearshares/bears:latest"
+export IMAGE_NAME="offerit/offer:$BRANCH_NAME"
+if [[ $IMAGE_NAME == "offerit/offer:stable" ]] ; then
+  IMAGE_NAME="offerit/offer:latest"
 fi
 sudo docker build --build-arg BUILD_STEP=2 -t=$IMAGE_NAME .
 sudo docker login --username=$DOCKER_USER --password=$DOCKER_PASS

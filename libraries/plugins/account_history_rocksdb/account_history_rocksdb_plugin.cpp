@@ -1,14 +1,14 @@
-#include <bears/plugins/account_history_rocksdb/account_history_rocksdb_plugin.hpp>
+#include <offer/plugins/account_history_rocksdb/account_history_rocksdb_plugin.hpp>
 
-#include <bears/chain/database.hpp>
-#include <bears/chain/history_object.hpp>
-#include <bears/chain/index.hpp>
-#include <bears/chain/util/impacted.hpp>
+#include <offer/chain/database.hpp>
+#include <offer/chain/history_object.hpp>
+#include <offer/chain/index.hpp>
+#include <offer/chain/util/impacted.hpp>
 
-#include <bears/plugins/chain/chain_plugin.hpp>
+#include <offer/plugins/chain/chain_plugin.hpp>
 
-#include <bears/utilities/benchmark_dumper.hpp>
-#include <bears/utilities/plugin_utilities.hpp>
+#include <offer/utilities/benchmark_dumper.hpp>
+#include <offer/utilities/plugin_utilities.hpp>
 
 #include <appbase/application.hpp>
 
@@ -28,7 +28,7 @@
 
 namespace bpo = boost::program_options;
 
-#define BEARS_NAMESPACE_PREFIX "bears::protocol::"
+#define OFFER_NAMESPACE_PREFIX "offer::protocol::"
 #define OPEN_FILE_LIMIT 750
 
 #define DIAGNOSTIC(s)
@@ -53,19 +53,19 @@ namespace bpo = boost::program_options;
 #define STORE_MAJOR_VERSION          1
 #define STORE_MINOR_VERSION          0
 
-namespace bears { namespace plugins { namespace account_history_rocksdb {
+namespace offer { namespace plugins { namespace account_history_rocksdb {
 
-using bears::protocol::account_name_type;
-using bears::protocol::block_id_type;
-using bears::protocol::operation;
-using bears::protocol::signed_block;
-using bears::protocol::signed_block_header;
-using bears::protocol::signed_transaction;
+using offer::protocol::account_name_type;
+using offer::protocol::block_id_type;
+using offer::protocol::operation;
+using offer::protocol::signed_block;
+using offer::protocol::signed_block_header;
+using offer::protocol::signed_transaction;
 
-using bears::chain::operation_notification;
-using bears::chain::transaction_id_type;
+using offer::chain::operation_notification;
+using offer::chain::transaction_id_type;
 
-using bears::utilities::benchmark_dumper;
+using offer::utilities::benchmark_dumper;
 
 using ::rocksdb::DB;
 using ::rocksdb::DBOptions;
@@ -358,18 +358,18 @@ class account_history_rocksdb_plugin::impl final
 public:
    impl( account_history_rocksdb_plugin& self, const bpo::variables_map& options, const bfs::path& storagePath) :
       _self(self),
-      _mainDb(appbase::app().get_plugin<bears::plugins::chain::chain_plugin>().db()),
+      _mainDb(appbase::app().get_plugin<offer::plugins::chain::chain_plugin>().db()),
       _storagePath(storagePath),
       _writeBuffer(_storage, _columnHandles)
       {
       collectOptions(options);
 
-      _mainDb.add_pre_reindex_handler([&]( const bears::chain::reindex_notification& note ) -> void
+      _mainDb.add_pre_reindex_handler([&]( const offer::chain::reindex_notification& note ) -> void
          {
             on_pre_reindex( note );
          }, _self, 0);
 
-      _mainDb.add_post_reindex_handler([&]( const bears::chain::reindex_notification& note ) -> void
+      _mainDb.add_post_reindex_handler([&]( const offer::chain::reindex_notification& note ) -> void
          {
             on_post_reindex( note );
          }, _self, 0);
@@ -444,8 +444,8 @@ public:
    }
 
    void printReport(uint32_t blockNo, const char* detailText) const;
-   void on_pre_reindex( const bears::chain::reindex_notification& note );
-   void on_post_reindex( const bears::chain::reindex_notification& note );
+   void on_pre_reindex( const offer::chain::reindex_notification& note );
+   void on_post_reindex( const offer::chain::reindex_notification& note );
 
    /// Allows to start immediate data import (outside replay process).
    void importData(unsigned int blockLimit);
@@ -703,7 +703,7 @@ private:
 void account_history_rocksdb_plugin::impl::collectOptions(const boost::program_options::variables_map& options)
 {
    typedef std::pair< account_name_type, account_name_type > pairstring;
-   BEARS_LOAD_VALUE_SET(options, "account-history-rocksdb-track-account-range", _tracked_accounts, pairstring);
+   OFFER_LOAD_VALUE_SET(options, "account-history-rocksdb-track-account-range", _tracked_accounts, pairstring);
 
    if(options.count("account-history-rocksdb-whitelist-ops"))
    {
@@ -774,7 +774,7 @@ inline bool account_history_rocksdb_plugin::impl::isTrackedAccount(const account
 std::vector<account_name_type> account_history_rocksdb_plugin::impl::getImpactedAccounts(const operation& op) const
 {
    flat_set<account_name_type> impacted;
-   bears::app::operation_get_impacted_accounts(op, impacted);
+   offer::app::operation_get_impacted_accounts(op, impacted);
    std::vector<account_name_type> retVal;
 
    if(impacted.empty())
@@ -822,7 +822,7 @@ void account_history_rocksdb_plugin::impl::storeOpFilteringParameters(const std:
          for(const string& op : ops)
          {
             if( op.empty() == false )
-               storage->insert( BEARS_NAMESPACE_PREFIX + op );
+               storage->insert( OFFER_NAMESPACE_PREFIX + op );
          }
       }
    }
@@ -1192,7 +1192,7 @@ void account_history_rocksdb_plugin::impl::prunePotentiallyTooOldItems(account_h
    }
 }
 
-void account_history_rocksdb_plugin::impl::on_pre_reindex(const bears::chain::reindex_notification& note)
+void account_history_rocksdb_plugin::impl::on_pre_reindex(const offer::chain::reindex_notification& note)
 {
    ilog("Received onReindexStart request, attempting to clean database storage.");
 
@@ -1217,7 +1217,7 @@ void account_history_rocksdb_plugin::impl::on_pre_reindex(const bears::chain::re
    ilog("onReindexStart request completed successfully.");
 }
 
-void account_history_rocksdb_plugin::impl::on_post_reindex(const bears::chain::reindex_notification& note)
+void account_history_rocksdb_plugin::impl::on_post_reindex(const offer::chain::reindex_notification& note)
 {
    ilog("Reindex completed up to block: ${b}. Setting back write limit to non-massive level.",
       ("b", note.last_block_number));
@@ -1497,5 +1497,5 @@ uint32_t account_history_rocksdb_plugin::enum_operations_from_block_range(uint32
 
 } } }
 
-FC_REFLECT( bears::plugins::account_history_rocksdb::account_history_info,
+FC_REFLECT( offer::plugins::account_history_rocksdb::account_history_info,
    (id)(oldestEntryId)(newestEntryId)(oldestEntryTimestamp) )

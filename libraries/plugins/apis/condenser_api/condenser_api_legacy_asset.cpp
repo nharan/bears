@@ -1,6 +1,6 @@
-#include <bears/plugins/condenser_api/condenser_api_legacy_asset.hpp>
+#include <offer/plugins/condenser_api/condenser_api_legacy_asset.hpp>
 
-namespace bears { namespace plugins { namespace condenser_api {
+namespace offer { namespace plugins { namespace condenser_api {
 
 uint32_t string_to_asset_num( const char* p, uint8_t decimals )
 {
@@ -42,17 +42,17 @@ uint32_t string_to_asset_num( const char* p, uint8_t decimals )
          }
          switch( name_u64 )
          {
-            case BEARS_SYMBOL_U64:
+            case OFFER_SYMBOL_U64:
                FC_ASSERT( decimals == 3, "Incorrect decimal places" );
-               asset_num = BEARS_ASSET_NUM_BEARS;
+               asset_num = OFFER_ASSET_NUM_OFFER;
                break;
             case BSD_SYMBOL_U64:
                FC_ASSERT( decimals == 3, "Incorrect decimal places" );
-               asset_num = BEARS_ASSET_NUM_BSD;
+               asset_num = OFFER_ASSET_NUM_BSD;
                break;
             case COINS_SYMBOL_U64:
                FC_ASSERT( decimals == 6, "Incorrect decimal places" );
-               asset_num = BEARS_ASSET_NUM_COINS;
+               asset_num = OFFER_ASSET_NUM_COINS;
                break;
             default:
                FC_ASSERT( false, "Cannot parse asset symbol" );
@@ -87,17 +87,17 @@ std::string asset_num_to_string( uint32_t asset_num )
    switch( asset_num )
    {
 #ifdef IS_TEST_NET
-      case BEARS_ASSET_NUM_BEARS:
+      case OFFER_ASSET_NUM_OFFER:
          return "TESTS";
-      case BEARS_ASSET_NUM_BSD:
+      case OFFER_ASSET_NUM_BSD:
          return "TBD";
 #else
-      case BEARS_ASSET_NUM_BEARS:
-         return "BEARS";
-      case BEARS_ASSET_NUM_BSD:
+      case OFFER_ASSET_NUM_OFFER:
+         return "OFFER";
+      case OFFER_ASSET_NUM_BSD:
          return "BSD";
 #endif
-      case BEARS_ASSET_NUM_COINS:
+      case OFFER_ASSET_NUM_COINS:
          return "COINS";
       default:
          return "UNKN"; // SMTs will return this symbol if returned as a legacy asset

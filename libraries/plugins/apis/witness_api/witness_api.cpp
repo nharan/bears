@@ -1,14 +1,14 @@
-#include <bears/plugins/witness_api/witness_api_plugin.hpp>
-#include <bears/plugins/witness_api/witness_api.hpp>
+#include <offer/plugins/witness_api/witness_api_plugin.hpp>
+#include <offer/plugins/witness_api/witness_api.hpp>
 
-namespace bears { namespace plugins { namespace witness {
+namespace offer { namespace plugins { namespace witness {
 
 namespace detail {
 
 class witness_api_impl
 {
    public:
-      witness_api_impl() : _db( appbase::app().get_plugin< bears::plugins::chain::chain_plugin >().db() ) {}
+      witness_api_impl() : _db( appbase::app().get_plugin< offer::plugins::chain::chain_plugin >().db() ) {}
 
       DECLARE_API_IMPL(
          (get_account_bandwidth)
@@ -38,7 +38,7 @@ DEFINE_API_IMPL( witness_api_impl, get_reserve_ratio )
 
 witness_api::witness_api(): my( new detail::witness_api_impl() )
 {
-   JSON_RPC_REGISTER_API( BEARS_WITNESS_API_PLUGIN_NAME );
+   JSON_RPC_REGISTER_API( OFFER_WITNESS_API_PLUGIN_NAME );
 }
 
 witness_api::~witness_api() {}
@@ -48,4 +48,4 @@ DEFINE_READ_APIS( witness_api,
    (get_reserve_ratio)
 )
 
-} } } // bears::plugins::witness
+} } } // offer::plugins::witness

@@ -1,12 +1,12 @@
-#include <bears/plugins/follow/follow_plugin.hpp>
-#include <bears/plugins/follow/follow_operations.hpp>
-#include <bears/plugins/follow/follow_objects.hpp>
-#include <bears/plugins/follow/inc_performance.hpp>
+#include <offer/plugins/follow/follow_plugin.hpp>
+#include <offer/plugins/follow/follow_operations.hpp>
+#include <offer/plugins/follow/follow_objects.hpp>
+#include <offer/plugins/follow/inc_performance.hpp>
 
-#include <bears/chain/account_object.hpp>
-#include <bears/chain/comment_object.hpp>
+#include <offer/chain/account_object.hpp>
+#include <offer/chain/comment_object.hpp>
 
-namespace bears { namespace plugins { namespace follow {
+namespace offer { namespace plugins { namespace follow {
 
 void follow_evaluator::do_apply( const follow_operation& o )
 {
@@ -216,4 +216,4 @@ void reblog_evaluator::do_apply( const reblog_operation& o )
    FC_CAPTURE_AND_RETHROW( (o) )
 }
 
-} } } // bears::follow
+} } } // offer::follow

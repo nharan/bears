@@ -1,6 +1,6 @@
 
-#include <bears/plugins/rc/rc_curve.hpp>
-#include <bears/protocol/config.hpp>
+#include <offer/plugins/rc/rc_curve.hpp>
+#include <offer/protocol/config.hpp>
 
 #include <fc/exception/exception.hpp>
 #include <fc/log/logger.hpp>
@@ -8,7 +8,7 @@
 
 #include <cstdint>
 
-namespace bears { namespace plugins { namespace rc {
+namespace offer { namespace plugins { namespace rc {
 
 void rc_curve_gen_params::validate()const
 {

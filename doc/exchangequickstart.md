@@ -1,9 +1,9 @@
 Exchange Quickstart
 -------------------
 
-System Requirements: A dedicated server or virtual machine with a minimum of 16GB of RAM, and at least 50GB of fast local SSD storage. BEARS is one of the most active blockchains in the world and handles an incredibly large amount of transactions per second, as such, it requires fast storage to run efficiently.
+System Requirements: A dedicated server or virtual machine with a minimum of 16GB of RAM, and at least 50GB of fast local SSD storage. OFFER is one of the most active blockchains in the world and handles an incredibly large amount of transactions per second, as such, it requires fast storage to run efficiently.
 
-We recommend using docker to both build and run BEARS for exchanges. Docker is the world's leading containerization platform and using it guarantees that your build and run environment is identical to what our developers use. You can still build from source and you can keep both blockchain data and wallet data outside of the docker container. The instructions below will show you how to do this in just a few easy steps.
+We recommend using docker to both build and run OFFER for exchanges. Docker is the world's leading containerization platform and using it guarantees that your build and run environment is identical to what our developers use. You can still build from source and you can keep both blockchain data and wallet data outside of the docker container. The instructions below will show you how to do this in just a few easy steps.
 
 ### Install docker and git (if not already installed)
 
@@ -18,12 +18,12 @@ curl -fsSL get.docker.com -o get-docker.sh
 sh get-docker.sh
 ```
 
-### Clone the bears repo
+### Clone the offer repo
 
-Pull in the bears repo from the official source on github and then change into the directory that's created for it.
+Pull in the offer repo from the official source on github and then change into the directory that's created for it.
 ```
-git clone https://github.com/bearshares/bears
-cd bears
+git clone https://github.com/offerit/offer
+cd offer
 ```
 
 ### Build the image from source with docker
@@ -31,7 +31,7 @@ cd bears
 Docker isn't just for downloading already built images, it can be used to build from source the same way you would otherwise build. By doing this you ensure that your build environment is identical to what we use to develop the software. Use the below command to start the build:
 
 ```
-docker build -t=bearshares/bears .
+docker build -t=offerit/offer .
 ```
 
 Don't forget the `.` at the end of the line which indicates the build target is in the current directory.
@@ -45,20 +45,20 @@ When the build completes you will see a message indicating that it is 'successfu
 If you'd like to use our already pre-built official binary images, it's as simple as downloading it from the Dockerhub registry with only one command:
 
 ```
-docker pull bearshares/bears
+docker pull offerit/offer
 ```
 
 ### Running a binary build without a Docker container
 
-If you build with Docker but do not want to run bearsd from within a docker container, you can stop here with this step and instead extract the binary from the container with the commands below. If you are going to run bearsd with docker (recommended method), skip this step altogether. We're simply providing an option for everyone's use-case. Our binaries are built mostly static, only dynamically linking to linux kernel libraries. We have tested and confirmed binaries built in Docker work on Ubuntu and Fedora and will likely work on many other Linux distrubutions. Building the image yourself or pulling one of our pre-built images both work.
+If you build with Docker but do not want to run offerd from within a docker container, you can stop here with this step and instead extract the binary from the container with the commands below. If you are going to run offerd with docker (recommended method), skip this step altogether. We're simply providing an option for everyone's use-case. Our binaries are built mostly static, only dynamically linking to linux kernel libraries. We have tested and confirmed binaries built in Docker work on Ubuntu and Fedora and will likely work on many other Linux distrubutions. Building the image yourself or pulling one of our pre-built images both work.
 
 To extract the binary you need to start a container and then copy the file from it.
 
 ```
-docker run -d --name bearsd-exchange bearshares/bears
-docker cp bearsd-exchange:/usr/local/bearsd-default/bin/bearsd /local/path/to/bearsd
-docker cp bearsd-exchange:/usr/local/bearsd-default/bin/cli_wallet /local/path/to/cli_wallet
-docker stop bearsd-exchange
+docker run -d --name offerd-exchange offerit/offer
+docker cp offerd-exchange:/usr/local/offerd-default/bin/offerd /local/path/to/offerd
+docker cp offerd-exchange:/usr/local/offerd-default/bin/cli_wallet /local/path/to/cli_wallet
+docker stop offerd-exchange
 ```
 
 For your convenience, we have provided a provided an [example\_config](example\_config.ini) that we expect should be sufficient to run your exchange node. Be sure to rename it to simply `config.ini`.
@@ -69,7 +69,7 @@ For re-usability, you can create directories to store blockchain and wallet data
 
 ```
 mkdir blockchain
-mkdir bearswallet
+mkdir offerwallet
 ```
 
 ### Run the container
@@ -77,7 +77,7 @@ mkdir bearswallet
 The below command will start a daemonized instance opening ports for p2p and RPC  while linking the directories we created for blockchain and wallet data inside the container. Fill in `TRACK_ACCOUNT` with the name of your exchange account that you want to follow. The `-v` flags are how you map directories outside of the container to the inside, you list the path to the directories you created earlier before the `:` for each `-v` flag. The restart policy ensures that the container will automatically restart even if your system is restarted.
 
 ```
-docker run -d --name bearsd-exchange --env TRACK_ACCOUNT=nameofaccount -p 3331:3331 -p 6990:6990 -v /path/to/bearswallet:/var/bearswallet -v /path/to/blockchain:/var/lib/bearsd/blockchain --restart always bearshares/bears
+docker run -d --name offerd-exchange --env TRACK_ACCOUNT=nameofaccount -p 3331:3331 -p 6990:6990 -v /path/to/offerwallet:/var/offerwallet -v /path/to/blockchain:/var/lib/offerd/blockchain --restart always offerit/offer
 ```
 
 You can see that the container is running with the `docker ps` command.
@@ -91,5 +91,5 @@ Initial syncing will take between 6 and 48 hours depending on your equipment, fa
 The command below will run the cli_wallet from inside the running container while mapping the `wallet.json` to the directory you created for it on the host.
 
 ```
-docker exec -it bearsd-exchange /usr/local/bearsd-default/bin/cli_wallet -w /var/bearswallet/wallet.json
+docker exec -it offerd-exchange /usr/local/offerd-default/bin/cli_wallet -w /var/offerwallet/wallet.json
 ```

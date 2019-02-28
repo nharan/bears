@@ -1,8 +1,8 @@
 
 # Introduction
 
-In this document we derive the approximate integer square root function used by Bears for the curation curve
-[here](https://github.com/bearshares/bears/issues/1052).
+In this document we derive the approximate integer square root function used by Offer for the curation curve
+[here](https://github.com/offerit/offer/issues/1052).
 
 # MSB function
 

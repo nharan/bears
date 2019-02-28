@@ -1,35 +1,35 @@
 
-#include <bears/app/api_context.hpp>
-#include <bears/app/application.hpp>
+#include <offer/app/api_context.hpp>
+#include <offer/app/application.hpp>
 
-#include <bears/plugins/raw_block/raw_block_api.hpp>
-#include <bears/plugins/raw_block/raw_block_plugin.hpp>
+#include <offer/plugins/raw_block/raw_block_api.hpp>
+#include <offer/plugins/raw_block/raw_block_plugin.hpp>
 
-namespace bears { namespace plugin { namespace raw_block {
+namespace offer { namespace plugin { namespace raw_block {
 
 namespace detail {
 
 class raw_block_api_impl
 {
    public:
-      raw_block_api_impl( bears::app::application& _app );
+      raw_block_api_impl( offer::app::application& _app );
 
-      std::shared_ptr< bears::plugin::raw_block::raw_block_plugin > get_plugin();
+      std::shared_ptr< offer::plugin::raw_block::raw_block_plugin > get_plugin();
 
-      bears::app::application& app;
+      offer::app::application& app;
 };
 
-raw_block_api_impl::raw_block_api_impl( bears::app::application& _app ) : app( _app )
+raw_block_api_impl::raw_block_api_impl( offer::app::application& _app ) : app( _app )
 {}
 
-std::shared_ptr< bears::plugin::raw_block::raw_block_plugin > raw_block_api_impl::get_plugin()
+std::shared_ptr< offer::plugin::raw_block::raw_block_plugin > raw_block_api_impl::get_plugin()
 {
    return app.get_plugin< raw_block_plugin >( "raw_block" );
 }
 
 } // detail
 
-raw_block_api::raw_block_api( const bears::app::api_context& ctx )
+raw_block_api::raw_block_api( const offer::app::api_context& ctx )
 {
    my = std::make_shared< detail::raw_block_api_impl >(ctx.app);
 }
@@ -37,7 +37,7 @@ raw_block_api::raw_block_api( const bears::app::api_context& ctx )
 get_raw_block_result raw_block_api::get_raw_block( get_raw_block_args args )
 {
    get_raw_block_result result;
-   std::shared_ptr< bears::chain::database > db = my->app.chain_database();
+   std::shared_ptr< offer::chain::database > db = my->app.chain_database();
 
    fc::optional<chain::signed_block> block = db->fetch_block_by_number( args.block_num );
    if( !block.valid() )
@@ -55,7 +55,7 @@ get_raw_block_result raw_block_api::get_raw_block( get_raw_block_args args )
 
 void raw_block_api::push_raw_block( std::string block_b64 )
 {
-   std::shared_ptr< bears::chain::database > db = my->app.chain_database();
+   std::shared_ptr< offer::chain::database > db = my->app.chain_database();
 
    std::string block_bin = fc::base64_decode( block_b64 );
    fc::datastream<const char*> ds( block_bin.c_str(), block_bin.size() );
@@ -69,4 +69,4 @@ void raw_block_api::push_raw_block( std::string block_b64 )
 
 void raw_block_api::on_api_startup() { }
 
-} } } // bears::plugin::raw_block
+} } } // offer::plugin::raw_block

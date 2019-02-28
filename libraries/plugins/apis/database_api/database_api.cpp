@@ -1,17 +1,17 @@
 #include <appbase/application.hpp>
 
-#include <bears/plugins/database_api/database_api.hpp>
-#include <bears/plugins/database_api/database_api_plugin.hpp>
+#include <offer/plugins/database_api/database_api.hpp>
+#include <offer/plugins/database_api/database_api_plugin.hpp>
 
-#include <bears/protocol/get_config.hpp>
-#include <bears/protocol/exceptions.hpp>
-#include <bears/protocol/transaction_util.hpp>
+#include <offer/protocol/get_config.hpp>
+#include <offer/protocol/exceptions.hpp>
+#include <offer/protocol/transaction_util.hpp>
 
-#include <bears/utilities/git_revision.hpp>
+#include <offer/utilities/git_revision.hpp>
 
 #include <fc/git_revision.hpp>
 
-namespace bears { namespace plugins { namespace database_api {
+namespace offer { namespace plugins { namespace database_api {
 
 class database_api_impl
 {
@@ -68,7 +68,7 @@ class database_api_impl
          (verify_authority)
          (verify_account_authority)
          (verify_signatures)
-#ifdef BEARS_ENABLE_SMT
+#ifdef OFFER_ENABLE_SMT
          (get_smt_next_identifier)
 #endif
       )
@@ -102,13 +102,13 @@ class database_api_impl
 database_api::database_api()
    : my( new database_api_impl() )
 {
-   JSON_RPC_REGISTER_API( BEARS_DATABASE_API_PLUGIN_NAME );
+   JSON_RPC_REGISTER_API( OFFER_DATABASE_API_PLUGIN_NAME );
 }
 
 database_api::~database_api() {}
 
 database_api_impl::database_api_impl()
-   : _db( appbase::app().get_plugin< bears::plugins::chain::chain_plugin >().db() ) {}
+   : _db( appbase::app().get_plugin< offer::plugins::chain::chain_plugin >().db() ) {}
 
 database_api_impl::~database_api_impl() {}
 
@@ -121,15 +121,15 @@ database_api_impl::~database_api_impl() {}
 
 DEFINE_API_IMPL( database_api_impl, get_config )
 {
-   return bears::protocol::get_config();
+   return offer::protocol::get_config();
 }
 
 DEFINE_API_IMPL( database_api_impl, get_version )
 {
    return get_version_return
    (
-      fc::string( BEARS_BLOCKCHAIN_VERSION ),
-      fc::string( bears::utilities::git_revision_sha ),
+      fc::string( OFFER_BLOCKCHAIN_VERSION ),
+      fc::string( offer::utilities::git_revision_sha ),
       fc::string( fc::git_revision_sha ),
       _db.get_chain_id()
    );
@@ -1282,8 +1282,8 @@ DEFINE_API_IMPL( database_api_impl, get_order_book )
    FC_ASSERT( args.limit <= DATABASE_API_SINGLE_QUERY_LIMIT );
    get_order_book_return result;
 
-   auto max_sell = price::max( BSD_SYMBOL, BEARS_SYMBOL );
-   auto max_buy = price::max( BEARS_SYMBOL, BSD_SYMBOL );
+   auto max_sell = price::max( BSD_SYMBOL, OFFER_SYMBOL );
+   auto max_buy = price::max( OFFER_SYMBOL, BSD_SYMBOL );
 
    const auto& limit_price_idx = _db.get_index< chain::limit_order_index >().indices().get< chain::by_price >();
    auto sell_itr = limit_price_idx.lower_bound( max_sell );
@@ -1298,20 +1298,20 @@ DEFINE_API_IMPL( database_api_impl, get_order_book )
       cur.real_price  = 0.0;
       // cur.real_price  = (cur.order_price).to_real();
       cur.bsd = itr->for_sale;
-      cur.bears = ( asset( itr->for_sale, BSD_SYMBOL ) * cur.order_price ).amount;
+      cur.offer = ( asset( itr->for_sale, BSD_SYMBOL ) * cur.order_price ).amount;
       cur.created = itr->created;
       result.bids.push_back( cur );
       ++sell_itr;
    }
-   while( buy_itr != end && buy_itr->sell_price.base.symbol == BEARS_SYMBOL && result.asks.size() < args.limit )
+   while( buy_itr != end && buy_itr->sell_price.base.symbol == OFFER_SYMBOL && result.asks.size() < args.limit )
    {
       auto itr = buy_itr;
       order cur;
       cur.order_price = itr->sell_price;
       cur.real_price = 0.0;
       // cur.real_price  = (~cur.order_price).to_real();
-      cur.bears   = itr->for_sale;
-      cur.bsd     = ( asset( itr->for_sale, BEARS_SYMBOL ) * cur.order_price ).amount;
+      cur.offer   = itr->for_sale;
+      cur.bsd     = ( asset( itr->for_sale, OFFER_SYMBOL ) * cur.order_price ).amount;
       cur.created = itr->created;
       result.asks.push_back( cur );
       ++buy_itr;
@@ -1340,8 +1340,8 @@ DEFINE_API_IMPL( database_api_impl, get_required_signatures )
                                                    [&]( string account_name ){ return authority( _db.get< chain::account_authority_object, chain::by_account >( account_name ).active  ); },
                                                    [&]( string account_name ){ return authority( _db.get< chain::account_authority_object, chain::by_account >( account_name ).owner   ); },
                                                    [&]( string account_name ){ return authority( _db.get< chain::account_authority_object, chain::by_account >( account_name ).posting ); },
-                                                   BEARS_MAX_SIG_CHECK_DEPTH,
-                                                   _db.has_hardfork( BEARS_HARDFORK_0_20__1944 ) ? fc::ecc::canonical_signature_type::bip_0062 : fc::ecc::canonical_signature_type::fc_canonical );
+                                                   OFFER_MAX_SIG_CHECK_DEPTH,
+                                                   _db.has_hardfork( OFFER_HARDFORK_0_20__1944 ) ? fc::ecc::canonical_signature_type::bip_0062 : fc::ecc::canonical_signature_type::fc_canonical );
 
    return result;
 }
@@ -1373,8 +1373,8 @@ DEFINE_API_IMPL( database_api_impl, get_potential_signatures )
             result.keys.insert( k );
          return authority( auth );
       },
-      BEARS_MAX_SIG_CHECK_DEPTH,
-      _db.has_hardfork( BEARS_HARDFORK_0_20__1944 ) ? fc::ecc::canonical_signature_type::bip_0062 : fc::ecc::canonical_signature_type::fc_canonical
+      OFFER_MAX_SIG_CHECK_DEPTH,
+      _db.has_hardfork( OFFER_HARDFORK_0_20__1944 ) ? fc::ecc::canonical_signature_type::bip_0062 : fc::ecc::canonical_signature_type::fc_canonical
    );
 
    return result;
@@ -1386,10 +1386,10 @@ DEFINE_API_IMPL( database_api_impl, verify_authority )
                            [&]( string account_name ){ return authority( _db.get< chain::account_authority_object, chain::by_account >( account_name ).active  ); },
                            [&]( string account_name ){ return authority( _db.get< chain::account_authority_object, chain::by_account >( account_name ).owner   ); },
                            [&]( string account_name ){ return authority( _db.get< chain::account_authority_object, chain::by_account >( account_name ).posting ); },
-                           BEARS_MAX_SIG_CHECK_DEPTH,
-                           BEARS_MAX_AUTHORITY_MEMBERSHIP,
-                           BEARS_MAX_SIG_CHECK_ACCOUNTS,
-                           _db.has_hardfork( BEARS_HARDFORK_0_20__1944 ) ? fc::ecc::canonical_signature_type::bip_0062 : fc::ecc::canonical_signature_type::fc_canonical );
+                           OFFER_MAX_SIG_CHECK_DEPTH,
+                           OFFER_MAX_AUTHORITY_MEMBERSHIP,
+                           OFFER_MAX_SIG_CHECK_ACCOUNTS,
+                           _db.has_hardfork( OFFER_HARDFORK_0_20__1944 ) ? fc::ecc::canonical_signature_type::bip_0062 : fc::ecc::canonical_signature_type::fc_canonical );
    return verify_authority_return( { true } );
 }
 
@@ -1415,7 +1415,7 @@ DEFINE_API_IMPL( database_api_impl, verify_signatures )
    flat_set< public_key_type > sig_keys;
    for( const auto&  sig : args.signatures )
    {
-      BEARS_ASSERT(
+      OFFER_ASSERT(
          sig_keys.insert( fc::ecc::public_key( sig, args.hash ) ).second,
          protocol::tx_duplicate_sig,
          "Duplicate Signature detected" );
@@ -1427,20 +1427,20 @@ DEFINE_API_IMPL( database_api_impl, verify_signatures )
    // verify authority throws on failure, catch and return false
    try
    {
-      bears::protocol::verify_authority< verify_signatures_args >(
+      offer::protocol::verify_authority< verify_signatures_args >(
          { args },
          sig_keys,
          [this]( const string& name ) { return authority( _db.get< chain::account_authority_object, chain::by_account >( name ).owner ); },
          [this]( const string& name ) { return authority( _db.get< chain::account_authority_object, chain::by_account >( name ).active ); },
          [this]( const string& name ) { return authority( _db.get< chain::account_authority_object, chain::by_account >( name ).posting ); },
-         BEARS_MAX_SIG_CHECK_DEPTH );
+         OFFER_MAX_SIG_CHECK_DEPTH );
    }
    catch( fc::exception& ) { result.valid = false; }
 
    return result;
 }
 
-#ifdef BEARS_ENABLE_SMT
+#ifdef OFFER_ENABLE_SMT
 //////////////////////////////////////////////////////////////////////
 //                                                                  //
 // SMT                                                              //
@@ -1503,9 +1503,9 @@ DEFINE_READ_APIS( database_api,
    (verify_authority)
    (verify_account_authority)
    (verify_signatures)
-#ifdef BEARS_ENABLE_SMT
+#ifdef OFFER_ENABLE_SMT
    (get_smt_next_identifier)
 #endif
 )
 
-} } } // bears::plugins::database_api
+} } } // offer::plugins::database_api

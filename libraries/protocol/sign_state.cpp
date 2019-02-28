@@ -1,7 +1,7 @@
 
-#include <bears/protocol/sign_state.hpp>
+#include <offer/protocol/sign_state.hpp>
 
-namespace bears { namespace protocol {
+namespace offer { namespace protocol {
 
 bool sign_state::signed_by( const public_key_type& k )
 {
@@ -109,4 +109,4 @@ sign_state::sign_state(
    approved_by.insert( "temp"  );
 }
 
-} } // bears::protocol
+} } // offer::protocol

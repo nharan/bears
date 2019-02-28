@@ -13,10 +13,10 @@ my $outFile = new IO::File($outputFileName, "w")
 my $fileHeader = <<'END';
 /** GENERATED FILE **/
 #include <set>
-#include <bears/wallet/api_documentation.hpp>
-#include <bears/wallet/wallet.hpp>
+#include <offer/wallet/api_documentation.hpp>
+#include <offer/wallet/wallet.hpp>
 
-namespace bears { namespace wallet {
+namespace offer { namespace wallet {
    namespace detail
    {
       struct api_method_name_collector_visitor
@@ -38,7 +38,7 @@ $outFile->print($fileHeader);
 
 for my $class (@{$doxydocs->{classes}})
 {
-  if ($class->{name} eq 'bears::wallet::wallet_api')
+  if ($class->{name} eq 'offer::wallet::wallet_api')
   {
     for my $member (@{$class->{public_methods}->{members}})
     {
@@ -84,7 +84,7 @@ my $fileFooter = <<'END';
           ++iter;
    }
 
-} } // end namespace bears::wallet
+} } // end namespace offer::wallet
 END
 $outFile->print($fileFooter);
 $outFile->close();

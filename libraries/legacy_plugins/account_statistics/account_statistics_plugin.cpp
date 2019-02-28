@@ -1,11 +1,11 @@
-#include <bears/account_statistics/account_statistics_api.hpp>
+#include <offer/account_statistics/account_statistics_api.hpp>
 
-#include <bears/chain/account_object.hpp>
-#include <bears/chain/comment_object.hpp>
+#include <offer/chain/account_object.hpp>
+#include <offer/chain/comment_object.hpp>
 
-#include <bears/chain/database.hpp>
+#include <offer/chain/database.hpp>
 
-namespace bears { namespace account_statistics {
+namespace offer { namespace account_statistics {
 
 namespace detail
 {
@@ -105,6 +105,6 @@ const flat_set< std::string >& account_statistics_plugin::get_tracked_accounts()
    return _my->_tracked_accounts;
 }
 
-} } // bears::account_statistics
+} } // offer::account_statistics
 
-BEARS_DEFINE_PLUGIN( account_statistics, bears::account_statistics::account_statistics_plugin );
+OFFER_DEFINE_PLUGIN( account_statistics, offer::account_statistics::account_statistics_plugin );

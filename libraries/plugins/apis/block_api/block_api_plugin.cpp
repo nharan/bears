@@ -1,7 +1,7 @@
-#include <bears/plugins/block_api/block_api.hpp>
-#include <bears/plugins/block_api/block_api_plugin.hpp>
+#include <offer/plugins/block_api/block_api.hpp>
+#include <offer/plugins/block_api/block_api_plugin.hpp>
 
-namespace bears { namespace plugins { namespace block_api {
+namespace offer { namespace plugins { namespace block_api {
 
 block_api_plugin::block_api_plugin() {}
 block_api_plugin::~block_api_plugin() {}
@@ -19,4 +19,4 @@ void block_api_plugin::plugin_startup() {}
 
 void block_api_plugin::plugin_shutdown() {}
 
-} } } // bears::plugins::block_api
+} } } // offer::plugins::block_api

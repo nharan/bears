@@ -1,8 +1,8 @@
-#include <bears/protocol/operations.hpp>
+#include <offer/protocol/operations.hpp>
 
-#include <bears/protocol/operation_util_impl.hpp>
+#include <offer/protocol/operation_util_impl.hpp>
 
-namespace bears { namespace protocol {
+namespace offer { namespace protocol {
 
 struct is_market_op_visitor {
    typedef bool result_type;
@@ -32,6 +32,6 @@ bool is_virtual_operation( const operation& op )
    return op.visit( is_vop_visitor() );
 }
 
-} } // bears::protocol
+} } // offer::protocol
 
-BEARS_DEFINE_OPERATION_TYPE( bears::protocol::operation )
+OFFER_DEFINE_OPERATION_TYPE( offer::protocol::operation )

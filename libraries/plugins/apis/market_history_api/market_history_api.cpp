@@ -1,20 +1,20 @@
-#include <bears/plugins/market_history_api/market_history_api_plugin.hpp>
-#include <bears/plugins/market_history_api/market_history_api.hpp>
+#include <offer/plugins/market_history_api/market_history_api_plugin.hpp>
+#include <offer/plugins/market_history_api/market_history_api.hpp>
 
-#include <bears/chain/bears_objects.hpp>
+#include <offer/chain/offer_objects.hpp>
 
 #define ASSET_TO_REAL( asset ) (double)( asset.amount.value )
 
-namespace bears { namespace plugins { namespace market_history {
+namespace offer { namespace plugins { namespace market_history {
 
 namespace detail {
 
-using namespace bears::plugins::market_history;
+using namespace offer::plugins::market_history;
 
 class market_history_api_impl
 {
    public:
-      market_history_api_impl() : _db( appbase::app().get_plugin< bears::plugins::chain::chain_plugin >().db() ) {}
+      market_history_api_impl() : _db( appbase::app().get_plugin< offer::plugins::chain::chain_plugin >().db() ) {}
 
       DECLARE_API_IMPL(
          (get_ticker)
@@ -38,9 +38,9 @@ DEFINE_API_IMPL( market_history_api_impl, get_ticker )
 
    if( itr != bucket_idx.end() )
    {
-      auto open = ASSET_TO_REAL( asset( itr->non_bears.open, BSD_SYMBOL ) ) / ASSET_TO_REAL( asset( itr->bears.open, BEARS_SYMBOL ) );
+      auto open = ASSET_TO_REAL( asset( itr->non_offer.open, BSD_SYMBOL ) ) / ASSET_TO_REAL( asset( itr->offer.open, OFFER_SYMBOL ) );
       itr = bucket_idx.lower_bound( boost::make_tuple( 0, _db.head_block_time() ) );
-      result.latest = ASSET_TO_REAL( asset( itr->non_bears.close, BSD_SYMBOL ) ) / ASSET_TO_REAL( asset( itr->bears.close, BEARS_SYMBOL ) );
+      result.latest = ASSET_TO_REAL( asset( itr->non_offer.close, BSD_SYMBOL ) ) / ASSET_TO_REAL( asset( itr->offer.close, OFFER_SYMBOL ) );
       result.percent_change = ( (result.latest - open ) / open ) * 100;
    }
 
@@ -51,7 +51,7 @@ DEFINE_API_IMPL( market_history_api_impl, get_ticker )
       result.lowest_ask = orders.asks[0].real_price;
 
    auto volume = get_volume( get_volume_args() );
-   result.bears_volume = volume.bears_volume;
+   result.offer_volume = volume.offer_volume;
    result.bsd_volume = volume.bsd_volume;
 
    return result;
@@ -69,8 +69,8 @@ DEFINE_API_IMPL( market_history_api_impl, get_volume )
    uint32_t bucket_size = itr->seconds;
    do
    {
-      result.bears_volume.amount += itr->bears.volume;
-      result.bsd_volume.amount += itr->non_bears.volume;
+      result.offer_volume.amount += itr->offer.volume;
+      result.bsd_volume.amount += itr->non_offer.volume;
 
       ++itr;
    } while( itr != bucket_idx.end() && itr->seconds == bucket_size );
@@ -83,7 +83,7 @@ DEFINE_API_IMPL( market_history_api_impl, get_order_book )
    FC_ASSERT( args.limit <= 500 );
 
    const auto& order_idx = _db.get_index< chain::limit_order_index, chain::by_price >();
-   auto itr = order_idx.lower_bound( price::max( BSD_SYMBOL, BEARS_SYMBOL ) );
+   auto itr = order_idx.lower_bound( price::max( BSD_SYMBOL, OFFER_SYMBOL ) );
 
    get_order_book_return result;
 
@@ -92,22 +92,22 @@ DEFINE_API_IMPL( market_history_api_impl, get_order_book )
       order cur;
       cur.order_price = itr->sell_price;
       cur.real_price = ASSET_TO_REAL( itr->sell_price.base ) / ASSET_TO_REAL( itr->sell_price.quote );
-      cur.bears = ( asset( itr->for_sale, BSD_SYMBOL ) * itr->sell_price ).amount;
+      cur.offer = ( asset( itr->for_sale, BSD_SYMBOL ) * itr->sell_price ).amount;
       cur.bsd = itr->for_sale;
       cur.created = itr->created;
       result.bids.push_back( cur );
       ++itr;
    }
 
-   itr = order_idx.lower_bound( price::max( BEARS_SYMBOL, BSD_SYMBOL ) );
+   itr = order_idx.lower_bound( price::max( OFFER_SYMBOL, BSD_SYMBOL ) );
 
-   while( itr != order_idx.end() && itr->sell_price.base.symbol == BEARS_SYMBOL && result.asks.size() < args.limit )
+   while( itr != order_idx.end() && itr->sell_price.base.symbol == OFFER_SYMBOL && result.asks.size() < args.limit )
    {
       order cur;
       cur.order_price = itr->sell_price;
       cur.real_price = ASSET_TO_REAL( itr->sell_price.quote ) / ASSET_TO_REAL( itr->sell_price.base );
-      cur.bears = itr->for_sale;
-      cur.bsd = ( asset( itr->for_sale, BEARS_SYMBOL ) * itr->sell_price ).amount;
+      cur.offer = itr->for_sale;
+      cur.bsd = ( asset( itr->for_sale, OFFER_SYMBOL ) * itr->sell_price ).amount;
       cur.created = itr->created;
       result.asks.push_back( cur );
       ++itr;
@@ -178,7 +178,7 @@ DEFINE_API_IMPL( market_history_api_impl, get_market_history )
 DEFINE_API_IMPL( market_history_api_impl, get_market_history_buckets )
 {
    get_market_history_buckets_return result;
-   result.bucket_sizes = appbase::app().get_plugin< bears::plugins::market_history::market_history_plugin >().get_tracked_buckets();
+   result.bucket_sizes = appbase::app().get_plugin< offer::plugins::market_history::market_history_plugin >().get_tracked_buckets();
    return result;
 }
 
@@ -187,7 +187,7 @@ DEFINE_API_IMPL( market_history_api_impl, get_market_history_buckets )
 
 market_history_api::market_history_api(): my( new detail::market_history_api_impl() )
 {
-   JSON_RPC_REGISTER_API( BEARS_MARKET_HISTORY_API_PLUGIN_NAME );
+   JSON_RPC_REGISTER_API( OFFER_MARKET_HISTORY_API_PLUGIN_NAME );
 }
 
 market_history_api::~market_history_api() {}
@@ -202,4 +202,4 @@ DEFINE_READ_APIS( market_history_api,
    (get_market_history_buckets)
 )
 
-} } } // bears::plugins::market_history
+} } } // offer::plugins::market_history

@@ -1,32 +1,32 @@
 
-#include <bears/plugins/block_data_export/block_data_export_plugin.hpp>
-#include <bears/plugins/block_data_export/exportable_block_data.hpp>
+#include <offer/plugins/block_data_export/block_data_export_plugin.hpp>
+#include <offer/plugins/block_data_export/exportable_block_data.hpp>
 
-#include <bears/plugins/stats_export/stats_export_plugin.hpp>
+#include <offer/plugins/stats_export/stats_export_plugin.hpp>
 
-#include <bears/chain/account_object.hpp>
-#include <bears/chain/database.hpp>
-#include <bears/chain/global_property_object.hpp>
-#include <bears/chain/index.hpp>
+#include <offer/chain/account_object.hpp>
+#include <offer/chain/database.hpp>
+#include <offer/chain/global_property_object.hpp>
+#include <offer/chain/index.hpp>
 
 #include <fstream>
 #include <iostream>
 #include <sstream>
 
-namespace bears { namespace plugins { namespace stats_export {
+namespace offer { namespace plugins { namespace stats_export {
 
-using bears::chain::block_notification;
-using bears::chain::database;
-using bears::chain::dynamic_global_property_object;
+using offer::chain::block_notification;
+using offer::chain::database;
+using offer::chain::dynamic_global_property_object;
 
-using bears::protocol::account_name_type;
-using bears::protocol::authority;
-using bears::protocol::signed_transaction;
+using offer::protocol::account_name_type;
+using offer::protocol::authority;
+using offer::protocol::signed_transaction;
 
-using bears::plugins::block_data_export::block_data_export_plugin;
-using bears::plugins::block_data_export::exportable_block_data;
+using offer::plugins::block_data_export::block_data_export_plugin;
+using offer::plugins::block_data_export::exportable_block_data;
 
-using bears::plugins::chain::chain_plugin;
+using offer::plugins::chain::chain_plugin;
 
 namespace detail {
 
@@ -55,10 +55,10 @@ class api_stats_export_data_object
 
 } } } }
 
-FC_REFLECT( bears::plugins::stats_export::detail::api_stats_transaction_data_object, (user)(size) )
-FC_REFLECT( bears::plugins::stats_export::detail::api_stats_export_data_object, (global_properties)(transaction_stats)(free_memory) )
+FC_REFLECT( offer::plugins::stats_export::detail::api_stats_transaction_data_object, (user)(size) )
+FC_REFLECT( offer::plugins::stats_export::detail::api_stats_export_data_object, (global_properties)(transaction_stats)(free_memory) )
 
-namespace bears { namespace plugins { namespace stats_export { namespace detail {
+namespace offer { namespace plugins { namespace stats_export { namespace detail {
 
 class stats_export_plugin_impl
 {
@@ -98,7 +98,7 @@ account_name_type get_transaction_user( const signed_transaction& tx )
 
 void stats_export_plugin_impl::on_post_apply_block( const block_notification& note )
 {
-   std::shared_ptr< api_stats_export_data_object > stats = _export_plugin.find_export_data< api_stats_export_data_object >( BEARS_STATS_EXPORT_PLUGIN_NAME );
+   std::shared_ptr< api_stats_export_data_object > stats = _export_plugin.find_export_data< api_stats_export_data_object >( OFFER_STATS_EXPORT_PLUGIN_NAME );
    if( !stats )
       return;
 
@@ -139,7 +139,7 @@ void stats_export_plugin::plugin_initialize( const boost::program_options::varia
       ilog( "Initializing stats_export plugin" );
       my->_post_apply_block_conn = my->_db.add_post_apply_block_handler(
          [&]( const block_notification& note ){ my->on_post_apply_block( note ); }, *this );
-      my->_export_plugin.register_export_data_factory( BEARS_STATS_EXPORT_PLUGIN_NAME,
+      my->_export_plugin.register_export_data_factory( OFFER_STATS_EXPORT_PLUGIN_NAME,
          []() -> std::shared_ptr< exportable_block_data > { return std::make_shared< detail::api_stats_export_data_object >(); } );
    }
    FC_CAPTURE_AND_RETHROW()
@@ -152,4 +152,4 @@ void stats_export_plugin::plugin_shutdown()
    chain::util::disconnect_signal( my->_post_apply_block_conn );
 }
 
-} } } // bears::plugins::stats_export
+} } } // offer::plugins::stats_export

@@ -1,6 +1,6 @@
-#include <bears/plugins/statsd/utility.hpp>
+#include <offer/plugins/statsd/utility.hpp>
 
-namespace bears { namespace plugins{ namespace statsd { namespace util {
+namespace offer { namespace plugins{ namespace statsd { namespace util {
 
 bool statsd_enabled()
 {
@@ -14,4 +14,4 @@ const statsd_plugin& get_statsd()
    return statsd;
 }
 
-} } } } // bears::plugins::statsd::util
+} } } } // offer::plugins::statsd::util

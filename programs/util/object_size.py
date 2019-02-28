@@ -16,8 +16,8 @@ builtin_type_sizes = {
    "bool" : 1,
 
    "fc::time_point_sec" : 4,
-   "bears::protocol::asset_symbol_type" : 8,
-   "bears::protocol::account_name_type" : 16,
+   "offer::protocol::asset_symbol_type" : 8,
+   "offer::protocol::account_name_type" : 16,
 }
 
 class TermSum(object):
@@ -79,7 +79,7 @@ class Sizer(object):
         return term(1, name)
 
 def main():
-    with open("bears.schema", "r") as f:
+    with open("offer.schema", "r") as f:
         schema = json.load(f)
 
     schema_map = schema["schema_map"]

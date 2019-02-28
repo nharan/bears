@@ -1,9 +1,9 @@
 #pragma once
 
-#include <bears/chain/database.hpp>
+#include <offer/chain/database.hpp>
 #include <fstream>
 
-namespace bears { namespace chain {
+namespace offer { namespace chain {
 
    namespace u_types
    {

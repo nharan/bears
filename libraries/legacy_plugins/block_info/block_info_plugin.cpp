@@ -1,14 +1,14 @@
 
-#include <bears/chain/database.hpp>
-#include <bears/chain/global_property_object.hpp>
+#include <offer/chain/database.hpp>
+#include <offer/chain/global_property_object.hpp>
 
-#include <bears/plugins/block_info/block_info.hpp>
-#include <bears/plugins/block_info/block_info_api.hpp>
-#include <bears/plugins/block_info/block_info_plugin.hpp>
+#include <offer/plugins/block_info/block_info.hpp>
+#include <offer/plugins/block_info/block_info_api.hpp>
+#include <offer/plugins/block_info/block_info_plugin.hpp>
 
 #include <string>
 
-namespace bears { namespace plugin { namespace block_info {
+namespace offer { namespace plugin { namespace block_info {
 
 block_info_plugin::block_info_plugin( application* app ) : plugin( app ) {}
 block_info_plugin::~block_info_plugin() {}
@@ -53,6 +53,6 @@ void block_info_plugin::on_applied_block( const chain::signed_block& b )
    return;
 }
 
-} } } // bears::plugin::block_info
+} } } // offer::plugin::block_info
 
-BEARS_DEFINE_PLUGIN( block_info, bears::plugin::block_info::block_info_plugin )
+OFFER_DEFINE_PLUGIN( block_info, offer::plugin::block_info::block_info_plugin )

@@ -1,20 +1,20 @@
-#include <bears/blockchain_statistics/blockchain_statistics_api.hpp>
+#include <offer/blockchain_statistics/blockchain_statistics_api.hpp>
 
-#include <bears/app/impacted.hpp>
-#include <bears/chain/account_object.hpp>
-#include <bears/chain/comment_object.hpp>
-#include <bears/chain/history_object.hpp>
+#include <offer/app/impacted.hpp>
+#include <offer/chain/account_object.hpp>
+#include <offer/chain/comment_object.hpp>
+#include <offer/chain/history_object.hpp>
 
-#include <bears/chain/database.hpp>
-#include <bears/chain/index.hpp>
-#include <bears/chain/operation_notification.hpp>
+#include <offer/chain/database.hpp>
+#include <offer/chain/index.hpp>
+#include <offer/chain/operation_notification.hpp>
 
-namespace bears { namespace blockchain_statistics {
+namespace offer { namespace blockchain_statistics {
 
 namespace detail
 {
 
-using namespace bears::protocol;
+using namespace offer::protocol;
 
 class blockchain_statistics_plugin_impl
 {
@@ -53,8 +53,8 @@ struct operation_process
       {
          b.transfers++;
 
-         if( op.amount.symbol == BEARS_SYMBOL )
-            b.bears_transferred += op.amount.amount;
+         if( op.amount.symbol == OFFER_SYMBOL )
+            b.offer_transferred += op.amount.amount;
          else
             b.bsd_transferred += op.amount.amount;
       });
@@ -180,7 +180,7 @@ struct operation_process
       _db.modify( _bucket, [&]( bucket_object& b )
       {
          b.transfers_to_coining++;
-         b.bears_coined += op.amount.amount;
+         b.offer_coined += op.amount.amount;
       });
    }
 
@@ -191,7 +191,7 @@ struct operation_process
       _db.modify( _bucket, [&]( bucket_object& b )
       {
          b.coining_withdrawals_processed++;
-         if( op.deposited.symbol == BEARS_SYMBOL )
+         if( op.deposited.symbol == OFFER_SYMBOL )
             b.coins_withdrawn += op.withdrawn.amount;
          else
             b.coins_transferred += op.withdrawn.amount;
@@ -239,7 +239,7 @@ struct operation_process
       _db.modify( _bucket, [&]( bucket_object& b )
       {
          b.bsd_conversion_requests_filled++;
-         b.bears_converted += op.amount_out.amount;
+         b.offer_converted += op.amount_out.amount;
       });
    }
 };
@@ -357,11 +357,11 @@ void blockchain_statistics_plugin_impl::pre_operation( const operation_notificat
          auto& account = db.get_account( op.account );
          const auto& bucket = db.get(bucket_id);
 
-         auto new_coining_withdrawal_rate = op.coining_shares.amount / BEARS_COINING_WITHDRAW_INTERVALS;
+         auto new_coining_withdrawal_rate = op.coining_shares.amount / OFFER_COINING_WITHDRAW_INTERVALS;
          if( op.coining_shares.amount > 0 && new_coining_withdrawal_rate == 0 )
             new_coining_withdrawal_rate = 1;
 
-         if( !db.has_hardfork( BEARS_HARDFORK_0_1 ) )
+         if( !db.has_hardfork( OFFER_HARDFORK_0_1 ) )
             new_coining_withdrawal_rate *= 1000000;
 
          db.modify( bucket, [&]( bucket_object& b )
@@ -468,6 +468,6 @@ uint32_t blockchain_statistics_plugin::get_max_history_per_bucket() const
    return _my->_maximum_history_per_bucket_size;
 }
 
-} } // bears::blockchain_statistics
+} } // offer::blockchain_statistics
 
-BEARS_DEFINE_PLUGIN( blockchain_statistics, bears::blockchain_statistics::blockchain_statistics_plugin );
+OFFER_DEFINE_PLUGIN( blockchain_statistics, offer::blockchain_statistics::blockchain_statistics_plugin );

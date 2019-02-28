@@ -1,13 +1,13 @@
-#include <bears/protocol/authority.hpp>
+#include <offer/protocol/authority.hpp>
 
-#include <bears/chain/util/impacted.hpp>
+#include <offer/chain/util/impacted.hpp>
 
 #include <fc/utility.hpp>
 
-namespace bears { namespace app {
+namespace offer { namespace app {
 
 using namespace fc;
-using namespace bears::protocol;
+using namespace offer::protocol;
 
 // TODO:  Review all of these, especially no-ops
 struct get_impacted_account_visitor
@@ -254,7 +254,7 @@ struct get_impacted_account_visitor
 
    void operator()( const hardfork_operation& op )
    {
-      _impacted.insert( BEARS_INIT_MINER_NAME );
+      _impacted.insert( OFFER_INIT_MINER_NAME );
    }
 
    //void operator()( const operation& op ){}

@@ -1,7 +1,7 @@
 #!/bin/bash
 #params:
-# - ref bearsd location
-# - tested bearsd location
+# - ref offerd location
+# - tested offerd location
 # - ref blockchain folder location
 # - tested blockchain folder location
 # - path to directory, where non-empty logs should be generated
@@ -11,14 +11,14 @@
 #
 # WARNING: use absolute paths instead of relative!
 #
-# sudo ./docker_build_and_run.sh ~/bearshares/bears/build/Release/programs/bearsd ~/bearshares/bears/build/Release/programs/bearsd ~/bearshares/bearsd_data/bearsnet ~/bearshares/bearsd_data/bearsnet ~/bearshares/logs 5000000 12
+# sudo ./docker_build_and_run.sh ~/offerit/offer/build/Release/programs/offerd ~/offerit/offer/build/Release/programs/offerd ~/offerit/offerd_data/offernet ~/offerit/offerd_data/offernet ~/offerit/logs 5000000 12
 
 if [ $# -lt 6 -o $# -gt 8 ]
 then
-   echo "Usage: reference_bearsd_location tested_bearsd_location ref_blockchain_folder_location tested_blockchain_folder_location"
+   echo "Usage: reference_offerd_location tested_offerd_location ref_blockchain_folder_location tested_blockchain_folder_location"
    echo "       logs_dir stop_replay_at_block [jobs [--dont-copy-config]"
-   echo "Example: ~/bearshares/ref_bearsd ~/bearshares/bears/build/Release/programs/bearsd ~/bearshares/bearsnet ~/bearshares/testnet"
-   echo "         ~/bearshares/logs 5000000 12"
+   echo "Example: ~/offerit/ref_offerd ~/offerit/offer/build/Release/programs/offerd ~/offerit/offernet ~/offerit/testnet"
+   echo "         ~/offerit/logs 5000000 12"
    echo "         if <jobs> not passed, <nproc> will be used."
    exit -1
 fi

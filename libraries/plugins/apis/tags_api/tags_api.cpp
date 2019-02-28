@@ -1,21 +1,21 @@
-#include <bears/plugins/tags_api/tags_api_plugin.hpp>
-#include <bears/plugins/tags_api/tags_api.hpp>
-#include <bears/plugins/tags/tags_plugin.hpp>
-#include <bears/plugins/follow_api/follow_api_plugin.hpp>
-#include <bears/plugins/follow_api/follow_api.hpp>
+#include <offer/plugins/tags_api/tags_api_plugin.hpp>
+#include <offer/plugins/tags_api/tags_api.hpp>
+#include <offer/plugins/tags/tags_plugin.hpp>
+#include <offer/plugins/follow_api/follow_api_plugin.hpp>
+#include <offer/plugins/follow_api/follow_api.hpp>
 
-#include <bears/chain/bears_object_types.hpp>
-#include <bears/chain/util/reward.hpp>
-#include <bears/chain/util/uint256.hpp>
+#include <offer/chain/offer_object_types.hpp>
+#include <offer/chain/util/reward.hpp>
+#include <offer/chain/util/uint256.hpp>
 
-namespace bears { namespace plugins { namespace tags {
+namespace offer { namespace plugins { namespace tags {
 
 namespace detail {
 
 class tags_api_impl
 {
    public:
-      tags_api_impl() : _db( appbase::app().get_plugin< bears::plugins::chain::chain_plugin >().db() ) {}
+      tags_api_impl() : _db( appbase::app().get_plugin< offer::plugins::chain::chain_plugin >().db() ) {}
 
       DECLARE_API_IMPL(
          (get_trending_tags)
@@ -63,7 +63,7 @@ class tags_api_impl
       chain::comment_id_type get_parent( const discussion_query& q );
 
       chain::database& _db;
-      std::shared_ptr< bears::plugins::follow::follow_api > _follow_api;
+      std::shared_ptr< offer::plugins::follow::follow_api > _follow_api;
 };
 
 DEFINE_API_IMPL( tags_api_impl, get_trending_tags )
@@ -421,7 +421,7 @@ DEFINE_API_IMPL( tags_api_impl, get_discussions_by_promoted )
    auto parent = get_parent( args );
 
    const auto& tidx = _db.get_index< tags::tag_index, tags::by_parent_promoted >();
-   auto tidx_itr = tidx.lower_bound( boost::make_tuple( tag, parent, share_type( BEARS_MAX_SHARE_SUPPLY ) )  );
+   auto tidx_itr = tidx.lower_bound( boost::make_tuple( tag, parent, share_type( OFFER_MAX_SHARE_SUPPLY ) )  );
 
    return get_discussions( args, tag, parent, tidx, tidx_itr, args.truncate_body, filter_default, exit_default, []( const tags::tag_object& t ){ return t.promoted_balance == 0; }  );
 }
@@ -546,15 +546,15 @@ void tags_api_impl::set_pending_payout( discussion& d )
    const auto& hist  = _db.get_feed_history();
 
    asset pot;
-   if( _db.has_hardfork( BEARS_HARDFORK_0_17__774 ) )
+   if( _db.has_hardfork( OFFER_HARDFORK_0_17__774 ) )
       pot = _db.get_reward_fund( _db.get_comment( d.author, d.permlink ) ).reward_balance;
    else
-      pot = props.total_reward_fund_bears;
+      pot = props.total_reward_fund_offer;
 
    if( !hist.current_median_history.is_null() ) pot = pot * hist.current_median_history;
 
    u256 total_r2 = 0;
-   if( _db.has_hardfork( BEARS_HARDFORK_0_17__774 ) )
+   if( _db.has_hardfork( OFFER_HARDFORK_0_17__774 ) )
       total_r2 = chain::util::to256( _db.get_reward_fund( _db.get_comment( d.author, d.permlink ) ).recent_claims );
    else
       total_r2 = chain::util::to256( props.total_reward_shares2 );
@@ -562,7 +562,7 @@ void tags_api_impl::set_pending_payout( discussion& d )
    if( total_r2 > 0 )
    {
       uint128_t vshares;
-      if( _db.has_hardfork( BEARS_HARDFORK_0_17__774 ) )
+      if( _db.has_hardfork( OFFER_HARDFORK_0_17__774 ) )
       {
          const auto& rf = _db.get_reward_fund( _db.get_comment( d.author, d.permlink ) );
          vshares = d.net_rshares.value > 0 ? chain::util::evaluate_reward_curve( d.net_rshares.value, rf.author_reward_curve, rf.content_constant ) : 0;
@@ -582,7 +582,7 @@ void tags_api_impl::set_pending_payout( discussion& d )
       }
    }
 
-   if( d.parent_author != BEARS_ROOT_POST_PARENT )
+   if( d.parent_author != OFFER_ROOT_POST_PARENT )
       d.cashout_time = _db.calculate_discussion_payout_time( _db.get< chain::comment_object >( d.id ) );
 
    if( d.body.size() > 1024*128 )
@@ -709,7 +709,7 @@ chain::comment_id_type tags_api_impl::get_parent( const discussion_query& query 
 
 tags_api::tags_api(): my( new detail::tags_api_impl() )
 {
-   JSON_RPC_REGISTER_API( BEARS_TAGS_API_PLUGIN_NAME );
+   JSON_RPC_REGISTER_API( OFFER_TAGS_API_PLUGIN_NAME );
 }
 
 tags_api::~tags_api() {}
@@ -744,10 +744,10 @@ void tags_api::set_pending_payout( discussion& d )
 
 void tags_api::api_startup()
 {
-   auto follow_api_plugin = appbase::app().find_plugin< bears::plugins::follow::follow_api_plugin >();
+   auto follow_api_plugin = appbase::app().find_plugin< offer::plugins::follow::follow_api_plugin >();
 
    if( follow_api_plugin != nullptr )
       my->_follow_api = follow_api_plugin->api;
 }
 
-} } } // bears::plugins::tags
+} } } // offer::plugins::tags

@@ -1,16 +1,16 @@
 
-#include <bears/schema/abstract_schema.hpp>
-#include <bears/schema/schema_impl.hpp>
+#include <offer/schema/abstract_schema.hpp>
+#include <offer/schema/schema_impl.hpp>
 
-#include <bears/protocol/schema_types.hpp>
+#include <offer/protocol/schema_types.hpp>
 
-namespace bears { namespace schema { namespace detail {
+namespace offer { namespace schema { namespace detail {
 
 //////////////////////////////////////////////
 // account_name_type                        //
 //////////////////////////////////////////////
 
-BEARS_SCHEMA_DEFINE_CLASS_METHODS( schema_account_name_type_impl )
+OFFER_SCHEMA_DEFINE_CLASS_METHODS( schema_account_name_type_impl )
 
 void schema_account_name_type_impl::get_deps( std::vector< std::shared_ptr< abstract_schema > >& deps )
 {
@@ -43,7 +43,7 @@ void schema_account_name_type_impl::get_str_schema( std::string& s )
 // asset_symbol_type                        //
 //////////////////////////////////////////////
 
-BEARS_SCHEMA_DEFINE_CLASS_METHODS( schema_asset_symbol_type_impl )
+OFFER_SCHEMA_DEFINE_CLASS_METHODS( schema_asset_symbol_type_impl )
 
 void schema_asset_symbol_type_impl::get_deps( std::vector< std::shared_ptr< abstract_schema > >& deps )
 {

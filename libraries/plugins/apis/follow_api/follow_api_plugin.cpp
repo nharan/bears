@@ -1,8 +1,8 @@
-#include <bears/plugins/follow_api/follow_api_plugin.hpp>
-#include <bears/plugins/follow_api/follow_api.hpp>
+#include <offer/plugins/follow_api/follow_api_plugin.hpp>
+#include <offer/plugins/follow_api/follow_api.hpp>
 
 
-namespace bears { namespace plugins { namespace follow {
+namespace offer { namespace plugins { namespace follow {
 
 follow_api_plugin::follow_api_plugin() {}
 follow_api_plugin::~follow_api_plugin() {}
@@ -17,4 +17,4 @@ void follow_api_plugin::plugin_initialize( const variables_map& options )
 void follow_api_plugin::plugin_startup() {}
 void follow_api_plugin::plugin_shutdown() {}
 
-} } } // bears::plugins::follow
+} } } // offer::plugins::follow

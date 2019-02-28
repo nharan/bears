@@ -1,7 +1,7 @@
 
-#include <bears/utilities/benchmark_dumper.hpp>
+#include <offer/utilities/benchmark_dumper.hpp>
 
-namespace bears { namespace utilities {
+namespace offer { namespace utilities {
 
 #define PROC_STATUS_LINE_LENGTH 1028
 

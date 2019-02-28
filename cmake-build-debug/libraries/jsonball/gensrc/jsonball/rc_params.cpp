@@ -1,5 +1,5 @@
 
-namespace bears { namespace jsonball {
+namespace offer { namespace jsonball {
 
 const char resource_parameters[] = {
  91, 91, 34,114,101,115,111,117,114, 99,101, 95,104,105,115,116,111,114,121, 95,

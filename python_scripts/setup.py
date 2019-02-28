@@ -1,12 +1,12 @@
 from setuptools import setup
 
-setup( name='bearsdebugnode',
+setup( name='offerdebugnode',
        version='0.1',
-       description='A wrapper for launching and interacting with a Bears Debug Node',
-       url='http://github.com/bearshares/bears',
-       author='Bearshares, Inc.',
-       author_email='vandeberg@bearshares.com',
+       description='A wrapper for launching and interacting with a Offer Debug Node',
+       url='http://github.com/offerit/offer',
+       author='Offerit, Inc.',
+       author_email='vandeberg@offerit.org',
        license='See LICENSE.md',
-       packages=['bearsdebugnode'],
-       #install_requires=['bearsapi'],
+       packages=['offerdebugnode'],
+       #install_requires=['offerapi'],
        zip_safe=False )

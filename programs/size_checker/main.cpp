@@ -27,7 +27,7 @@
 #include <fc/variant.hpp>
 #include <fc/variant_object.hpp>
 
-#include <bears/protocol/protocol.hpp>
+#include <offer/protocol/protocol.hpp>
 
 #include <algorithm>
 #include <iostream>
@@ -35,7 +35,7 @@
 #include <string>
 #include <vector>
 
-using namespace bears::protocol;
+using namespace offer::protocol;
 
 std::vector< fc::variant_object > g_op_types;
 
@@ -68,7 +68,7 @@ int main( int argc, char** argv )
 {
    try
    {
-      bears::protocol::operation op;
+      offer::protocol::operation op;
 
 
       std::vector<uint64_t> witnesses; witnesses.resize(50);

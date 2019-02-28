@@ -1,11 +1,11 @@
-file(GLOB HEADERS "include/bears/plugins/witness/*.hpp")
+file(GLOB HEADERS "include/offer/plugins/witness/*.hpp")
 
 add_library( witness_plugin
              witness_plugin.cpp
              ${HEADERS}
            )
 
-target_link_libraries( witness_plugin p2p_plugin chain_plugin rc_plugin block_data_export_plugin appbase bears_chain bears_utilities bears_utilities )
+target_link_libraries( witness_plugin p2p_plugin chain_plugin rc_plugin block_data_export_plugin appbase offer_chain offer_utilities offer_utilities )
 target_include_directories( witness_plugin
                             PUBLIC "${CMAKE_CURRENT_SOURCE_DIR}/include" )
 

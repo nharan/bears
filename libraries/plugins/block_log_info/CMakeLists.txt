@@ -1,10 +1,10 @@
-file(GLOB HEADERS "include/bears/plugins/block_log_info/*.hpp")
+file(GLOB HEADERS "include/offer/plugins/block_log_info/*.hpp")
 
 add_library( block_log_info_plugin
              block_log_info_plugin.cpp
            )
 
-target_link_libraries( block_log_info_plugin chain_plugin bears_chain bears_protocol )
+target_link_libraries( block_log_info_plugin chain_plugin offer_chain offer_protocol )
 target_include_directories( block_log_info_plugin
                             PUBLIC "${CMAKE_CURRENT_SOURCE_DIR}/include" )
 

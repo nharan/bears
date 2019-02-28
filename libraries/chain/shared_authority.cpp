@@ -1,6 +1,6 @@
-#include <bears/chain/shared_authority.hpp>
+#include <offer/chain/shared_authority.hpp>
 
-namespace bears { namespace chain {
+namespace offer { namespace chain {
 
 shared_authority::operator authority()const
 {
@@ -90,4 +90,4 @@ bool operator == ( const shared_authority& a, const authority& b )
    return authority( a ) == b;
 }
 
-} } // bears::chain
+} } // offer::chain
