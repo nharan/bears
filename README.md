@@ -30,13 +30,13 @@ You can read the Offer Whitepaper at [Offer.io/OfferWhitePaper.pdf](https://offe
 
 # Quickstart
 
-Just want to get up and running quickly? We have pre-built docker images for your convenience. More details are in our [quickstart guide](https://github.com/offerit/offer/blob/master/doc/exchangequickstart.md).
+Just want to get up and running quickly? We have pre-built docker images for your convenience. More details are in our [quickstart guide](https://github.com/nharan/offer/blob/master/doc/exchangequickstart.md).
 
 # Building
 
-We strongly recommend using one of our pre-built Docker images or using Docker to build Offer. Both of these processes are described in the [quickstart guide](https://github.com/offerit/offer/blob/master/doc/exchangequickstart.md).
+We strongly recommend using one of our pre-built Docker images or using Docker to build Offer. Both of these processes are described in the [quickstart guide](https://github.com/nharan/offer/blob/master/doc/exchangequickstart.md).
 
-If you would still like to build from source, we do have [build instructions](https://github.com/offerit/offer/blob/master/doc/building.md) for Linux (Ubuntu LTS) and macOS.
+If you would still like to build from source, we do have [build instructions](https://github.com/nharan/offer/blob/master/doc/building.md) for Linux (Ubuntu LTS) and macOS.
 
 ## Dockerized p2p Node
 
@@ -56,7 +56,7 @@ that uses ca. 14GB of memory and growing:
     docker run \
         --env USE_WAY_TOO_MUCH_RAM=1 --env USE_FULL_WEB_NODE=1 \
         -d -p 3331:3331 -p 6990:6990 --name offerd-full \
-        offerit/offer
+        nharan/offer
 
     docker logs -f offerd-full
 
